@@ -330,9 +330,10 @@ export const presetsApi = {
 export const validationApi = {
     // Run selected validations in background
     runAll: async (data: {
-        model_id: string;
+        model_id?: string;
         dataset_id: string;
         selected_validations?: string[];
+        fairness_validation_id?: string;
         fairness_config: {
             sensitive_feature: string;
             target_column: string | null;

@@ -695,6 +695,19 @@ export default function ValidationPage() {
         if (status.state === "SUCCESS") {
           if (suiteId) {
             const suiteResults = await validationApi.getSuiteResults(suiteId);
+            // Merge in any pending fairness-from-predictions result
+            const pendingFairness = (window as any).__pendingFairnessResult;
+            if (pendingFairness) {
+              suiteResults.validations = {
+                ...pendingFairness,
+                ...(suiteResults.validations || {}),
+                fairness: pendingFairness.fairness,
+              };
+              suiteResults.overall_passed =
+                pendingFairness.overall_passed_fairness &&
+                (suiteResults.overall_passed ?? true);
+              delete (window as any).__pendingFairnessResult;
+            }
             setResults(suiteResults);
           }
           setIsRunning(false);
@@ -980,12 +993,13 @@ export default function ValidationPage() {
         (v) => v !== "transparency" || !!targetColumn,
       );
 
-      // Dataset-predictions fairness mode: call the dedicated endpoint directly
+      // Dataset-predictions mode: fairness is run directly; if privacy is also
+      // selected it goes through the normal runAll path (model_id will be null).
       if (
         predictionMode === "dataset" &&
-        selectedValidators.includes("fairness") &&
-        selectedValidators.length === 1
+        selectedValidators.includes("fairness")
       ) {
+        // Run fairness from predictions first (synchronous, no model needed)
         setCurrentStep("Running fairness from dataset predictions…");
         const fairnessResult = await validationApi.fairnessFromPredictions({
           dataset_id: selectedDataset,
@@ -996,24 +1010,78 @@ export default function ValidationPage() {
           custom_rules: buildCustomRulesPayload(),
           thresholds: buildFairnessThresholdPayload(),
         });
-        // Wrap the result in a pseudo-suite shape so results render correctly
-        setResults({
-          suite_id: null,
-          overall_passed: fairnessResult.overall_passed,
-          validations: [
-            {
-              type: "fairness",
-              status: "completed",
-              passed: fairnessResult.overall_passed,
-              validation_id: fairnessResult.validation_id,
-              result: fairnessResult,
+
+        // Convert the metrics dict { name: {value, threshold, passed} } → array
+        const metricsArray = Object.entries(fairnessResult.metrics || {}).map(
+          ([name, m]: [string, any]) => ({
+            metric_name: name,
+            value: m.value,
+            threshold: m.threshold,
+            passed: m.passed,
+            by_group: m.by_group,
+          }),
+        );
+
+        // If only fairness was selected, show results immediately
+        if (!selectedValidators.includes("privacy")) {
+          setResults({
+            suite_id: null,
+            overall_passed: fairnessResult.overall_passed,
+            validations: {
+              fairness: {
+                status: "completed",
+                passed: fairnessResult.overall_passed,
+                validation_id: fairnessResult.validation_id,
+                results: metricsArray,
+              },
             },
-          ],
+          });
+          setProgress(100);
+          setCurrentStep("Completed");
+          setIsRunning(false);
+          setActiveStep(3);
+          return;
+        }
+
+        // Privacy was also selected — queue it via runAll (model_id=null is fine)
+        setCurrentStep("Running privacy validation…");
+        const privacyOnlyValidators = effectiveSelectedValidators.filter(
+          (v) => v !== "fairness",
+        );
+        const response = await validationApi.runAll({
+          model_id: undefined,
+          dataset_id: selectedDataset,
+          selected_validations: privacyOnlyValidators,
+          fairness_validation_id: fairnessResult.validation_id,
+          fairness_config: { sensitive_feature: sensitiveFeature, target_column: null, selected_metrics: [], custom_rules: [], thresholds: {} },
+          transparency_config: { target_column: null, sample_size: 100 },
+          privacy_config: {
+            selected_checks: selectedPrivacyChecks,
+            k_anonymity_k: sanitizedKAnonymityConfigs[0]?.k ?? Math.max(1, Math.round(kAnonymityK || 1)),
+            k_anonymity_configs: selectedPrivacyChecks.includes("k_anonymity") ? sanitizedKAnonymityConfigs : undefined,
+            l_diversity_l: lDiversityL,
+            quasi_identifiers: quasiIdentifiers.length > 0 ? quasiIdentifiers : undefined,
+            sensitive_attribute: sensitiveAttribute || undefined,
+            custom_pii_patterns: selectedPrivacyChecks.includes("pii_detection") && Object.keys(sanitizedCustomPiiPatterns).length > 0 ? sanitizedCustomPiiPatterns : undefined,
+            dp_target_epsilon: dpTargetEpsilon,
+            dp_apply_noise: dpApplyNoise,
+          },
+          requirement_ids: selectedRequirements.length > 0 ? selectedRequirements : undefined,
         });
-        setProgress(100);
-        setCurrentStep("Completed");
-        setIsRunning(false);
-        setActiveStep(3);
+        // Store the fairness result in state so we can merge it when the suite completes
+        setTaskId(response.task_id);
+        setSuiteId(response.suite_id);
+        // Store fairness partial result so we can merge it once polling completes
+        (window as any).__pendingFairnessResult = {
+          fairness: {
+            status: "completed",
+            passed: fairnessResult.overall_passed,
+            validation_id: fairnessResult.validation_id,
+            results: metricsArray,
+          },
+          overall_passed_fairness: fairnessResult.overall_passed,
+        };
+        setCurrentStep("Privacy validation queued — polling…");
         return;
       }
 
@@ -1809,8 +1877,8 @@ export default function ValidationPage() {
                       {predictionMode === "dataset" &&
                         selectedValidators.length > 1 && (
                           <Alert severity="warning" sx={{ mt: 1 }}>
-                            Dataset-predictions mode supports Fairness only.
-                            Either deselect other validators or switch back to
+                            Dataset-predictions mode supports Fairness  and privacy metrics.
+                           If you want to select more than 2 Either deselect other validators or switch back to
                             model mode.
                           </Alert>
                         )}
@@ -2717,7 +2785,7 @@ export default function ValidationPage() {
                 {results.overall_passed ? "Passed ✓" : "Has Issues ⚠"}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Suite ID: {results.suite_id}
+                {results.suite_id ? `Suite ID: ${results.suite_id}` : "Dataset Prediction Validation (No Suite ID)"}
               </Typography>
             </Alert>
 
@@ -2786,7 +2854,7 @@ export default function ValidationPage() {
                                   variant="caption"
                                   color="text.secondary"
                                 >
-                                  {m.metric_value?.toFixed(3)} / {m.threshold}
+                                  {(m.value ?? m.metric_value)?.toFixed(3) ?? "—"} / {m.threshold}
                                 </Typography>
                                 <Button
                                   size="small"
@@ -3211,6 +3279,7 @@ export default function ValidationPage() {
                       variant="outlined"
                       size="small"
                       fullWidth
+                      disabled={!results.suite_id}
                       onClick={() =>
                         navigate(`/validations/${results.suite_id}/privacy`)
                       }
@@ -3301,6 +3370,7 @@ export default function ValidationPage() {
               </Button>
               <Button
                 variant="outlined"
+                disabled={!(results?.suite_id || suiteId)}
                 onClick={() => {
                   const activeSuiteId = results?.suite_id || suiteId;
                   if (activeSuiteId)
@@ -3309,7 +3379,11 @@ export default function ValidationPage() {
               >
                 View Full Report
               </Button>
-              <Button variant="outlined" onClick={handleDownloadSuitePdf}>
+              <Button 
+                variant="outlined" 
+                onClick={handleDownloadSuitePdf}
+                disabled={!(results?.suite_id || suiteId)}
+              >
                 Download PDF
               </Button>
               <Button

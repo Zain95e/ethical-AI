@@ -1469,7 +1469,7 @@ def run_all_validations_task(
                 idx = 0  # tracks which slice we're in
 
                 # ── 1. Fairness ───────────────────────────────────────
-                if "fairness" in run_set and model_id:
+                if "fairness" in run_set:
                     base = start_pct(idx)
                     self.update_state(state="PROGRESS", meta={"progress": base, "step": "Starting fairness validation"})
 
@@ -1507,7 +1507,7 @@ def run_all_validations_task(
                     idx += 1
 
                 # ── 2. Transparency ───────────────────────────────────
-                if "transparency" in run_set and model_id:
+                if "transparency" in run_set:
                     base = start_pct(idx)
                     self.update_state(state="PROGRESS", meta={"progress": base, "step": "Starting transparency validation"})
 
@@ -1592,8 +1592,8 @@ def run_all_validations_task(
                         use_mlflow=True
                     )
                     run_id = tracker.start_validation_run(
-                        model_name=model_id if model_id else "None",
-                        model_id=model_id if model_id else "None",
+                        model_name=model_id,
+                        model_id=model_id,
                         dataset_name=dataset_id,
                         dataset_id=dataset_id,
                         requirement_name="Accountability Audit",

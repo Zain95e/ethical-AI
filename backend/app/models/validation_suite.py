@@ -55,10 +55,10 @@ class ValidationSuite(Base):
         primary_key=True,
         default=uuid.uuid4
     )
-    model_id: Mapped[uuid.UUID] = mapped_column(
+    model_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("ml_models.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True
     )
     dataset_id: Mapped[uuid.UUID] = mapped_column(
@@ -120,7 +120,7 @@ class ValidationSuite(Base):
     )
     
     # Relationships
-    model: Mapped["MLModel"] = relationship(
+    model: Mapped[Optional["MLModel"]] = relationship(
         "MLModel",
         foreign_keys=[model_id]
     )

@@ -10,7 +10,7 @@ from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 import pandas as pd
 import numpy as np
 
@@ -41,6 +41,14 @@ def _json_safe(obj: Any) -> Any:
     """
     if isinstance(obj, float):
         return obj if math.isfinite(obj) else None
+    if isinstance(obj, np.floating):
+        return float(obj) if math.isfinite(obj) else None
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    if isinstance(obj, np.ndarray):
+        return [_json_safe(v) for v in obj.tolist()]
     if isinstance(obj, dict):
         return {k: _json_safe(v) for k, v in obj.items()}
     if isinstance(obj, list):
@@ -427,8 +435,19 @@ async def run_fairness_from_predictions(
     try:
         df = pd.read_csv(dataset_record.file_path)
 
-        y_pred = df[request.prediction_column].values
-        y_true = df[request.actual_column].values if request.actual_column else y_pred
+        y_pred_raw = df[request.prediction_column]
+        y_true_raw = df[request.actual_column] if request.actual_column else y_pred_raw
+        
+        def _to_binary(series: pd.Series) -> np.ndarray:
+            if series.dtype == 'object' or series.dtype.name == 'category':
+                return (series.astype(str).str.contains('>|high|yes|true|1|approved', case=False, regex=True)).astype(int).values
+            arr = series.values
+            if not np.all(np.isin(arr, [0, 1])):
+                return (arr > 0.5).astype(int) # threshold for probability or {-1, 1}
+            return arr.astype(int)
+            
+        y_pred = _to_binary(y_pred_raw)
+        y_true = _to_binary(y_true_raw)
         sensitive = df[request.sensitive_feature].values
 
         thresholds = request.thresholds or {
@@ -452,6 +471,20 @@ async def run_fairness_from_predictions(
         validation.status = ValidationStatus.COMPLETED
         validation.progress = 100
         validation.completed_at = datetime.now(timezone.utc)
+        
+        # Save ValidationResult objects to the DB
+        for m in report.metrics:
+            val_result = ValidationResult(
+                validation_id=validation.id,
+                principle="fairness",
+                metric_name=m.metric_name,
+                metric_value=m.overall_value,
+                threshold=m.threshold,
+                passed=m.passed,
+                details=_json_safe(m.by_group) if m.by_group else None
+            )
+            db.add(val_result)
+            
         await db.commit()
 
         # Audit log
@@ -470,24 +503,24 @@ async def run_fairness_from_predictions(
         db.add(audit)
         await db.commit()
 
-        logger.info("Fairness-from-predictions completed: id=%s passed=%s", validation.id, report.overall_passed)
+        logger.info("Fairness-from-predictions completed: id=%s passed=%s", validation.id, bool(report.overall_passed))
 
         metrics = {}
         for m in report.metrics:
             metrics[m.metric_name] = {
-                "value": m.overall_value,
-                "threshold": m.threshold,
-                "passed": m.passed,
-                "by_group": m.by_group,
+                "value": float(m.overall_value) if m.overall_value is not None else None,
+                "threshold": float(m.threshold) if m.threshold is not None else None,
+                "passed": bool(m.passed),
+                "by_group": _json_safe(m.by_group),
             }
 
         return FairnessResultResponse(
             validation_id=validation.id,
             status="completed",
-            overall_passed=report.overall_passed,
+            overall_passed=bool(report.overall_passed),
             metrics=metrics,
-            group_metrics={"groups": report.groups, "sample_sizes": report.sample_sizes},
-            visualizations=report.visualizations,
+            group_metrics=_json_safe({"groups": report.groups, "sample_sizes": report.sample_sizes}),
+            visualizations=_json_safe(report.visualizations),
         )
 
     except Exception as e:
@@ -623,9 +656,9 @@ async def run_transparency_validation(
         return TransparencyResultResponse(
             validation_id=validation.id,
             status="completed",
-            global_importance=importance_dict,
-            model_card=model_card.to_dict(),
-            visualizations=global_exp.visualizations
+            global_importance=_json_safe(importance_dict),
+            model_card=_json_safe(model_card.to_dict()),
+            visualizations=_json_safe(global_exp.visualizations)
         )
         
     except Exception as e:
@@ -800,12 +833,12 @@ async def run_privacy_validation(
         return PrivacyResultResponse(
             validation_id=validation.id,
             status="completed",
-            overall_passed=report.overall_passed,
-            pii_detected=pii_list,
-            k_anonymity=report.k_anonymity.to_dict() if report.k_anonymity else None,
-            k_anonymity_configs=[k.to_dict() for k in report.k_anonymity_configs] if report.k_anonymity_configs else None,
-            l_diversity=report.l_diversity.to_dict() if report.l_diversity else None,
-            recommendations=report.recommendations
+            overall_passed=bool(report.overall_passed),
+            pii_detected=_json_safe(pii_list),
+            k_anonymity=_json_safe(report.k_anonymity.to_dict()) if report.k_anonymity else None,
+            k_anonymity_configs=_json_safe([k.to_dict() for k in report.k_anonymity_configs]) if report.k_anonymity_configs else None,
+            l_diversity=_json_safe(report.l_diversity.to_dict()) if report.l_diversity else None,
+            recommendations=_json_safe(report.recommendations)
         )
         
     except HTTPException:
@@ -862,15 +895,18 @@ async def get_validation_history(
     from ..models.validation_suite import ValidationSuite
     from sqlalchemy.orm import selectinload
     
-    # Get validation suites for models in this project
+    # Get validation suites for this project — include both model-linked and
+    # model-less (dataset-only) suites. ValidationSuite.dataset always has a
+    # project_id we can filter on.
+    from ..models.dataset import Dataset as DatasetModel
     result = await db.execute(
         select(ValidationSuite)
-        .join(MLModel, ValidationSuite.model_id == MLModel.id)
+        .join(DatasetModel, ValidationSuite.dataset_id == DatasetModel.id)
         .options(
             selectinload(ValidationSuite.model),
             selectinload(ValidationSuite.dataset)
         )
-        .where(MLModel.project_id == project_id)
+        .where(DatasetModel.project_id == project_id)
         .order_by(ValidationSuite.started_at.desc())
         .limit(limit)
     )
@@ -903,7 +939,7 @@ async def get_validation_history(
         
         history.append({
             "suite_id": str(suite.id),
-            "model_name": suite.model.name if suite.model else "Unknown",
+            "model_name": suite.model.name if suite.model else None,
             "dataset_name": suite.dataset.name if suite.dataset else "Unknown",
             "status": suite.status,
             "overall_passed": suite.overall_passed,
@@ -947,7 +983,7 @@ async def get_validation_history(
     return history
 class AllValidationsRequest(BaseModel):
     """Request to run all 4 validations in sequence."""
-    model_id: UUID
+    model_id: Optional[UUID] = None
     dataset_id: UUID
     fairness_config: Dict[str, Any]
     transparency_config: Dict[str, Any]
@@ -956,6 +992,15 @@ class AllValidationsRequest(BaseModel):
     selected_validations: Optional[List[str]] = None
     # Optional requirement IDs to link validations to specific requirements
     requirement_ids: Optional[List[UUID]] = None
+    # Optional fairness validation ID for dataset-only runs
+    fairness_validation_id: Optional[UUID] = None
+
+    @field_validator('model_id', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 
 class ValidationSuiteResponse(BaseModel):
@@ -999,17 +1044,19 @@ async def run_all_validations(
     from ..models.validation_suite import ValidationSuite
     from ..tasks.validation_tasks import run_all_validations_task
     
-    # Verify model access
-    result = await db.execute(
-        select(MLModel).where(MLModel.id == request.model_id)
-    )
-    model_record = result.scalar_one_or_none()
-    
-    if not model_record:
-        raise HTTPException(status_code=404, detail="Model not found")
-    
-    if not await verify_access(db, current_user, model_record.project_id):
-        raise HTTPException(status_code=403, detail="Access denied")
+    # Verify model access if provided
+    model_record = None
+    if request.model_id:
+        result = await db.execute(
+            select(MLModel).where(MLModel.id == request.model_id)
+        )
+        model_record = result.scalar_one_or_none()
+        
+        if not model_record:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        if not await verify_access(db, current_user, model_record.project_id):
+            raise HTTPException(status_code=403, detail="Access denied")
     
     # Verify dataset access
     result = await db.execute(
@@ -1026,7 +1073,8 @@ async def run_all_validations(
         dataset_id=request.dataset_id,
         status="pending",
         created_by_id=current_user.id,
-        started_at=datetime.now(timezone.utc)
+        started_at=datetime.now(timezone.utc),
+        fairness_validation_id=request.fairness_validation_id
     )
     db.add(suite)
     await db.commit()
@@ -1034,7 +1082,7 @@ async def run_all_validations(
     
     # Queue background task
     fairness_config = dict(request.fairness_config or {})
-    if "custom_rules" not in fairness_config:
+    if "custom_rules" not in fairness_config and model_record:
         fairness_config["custom_rules"] = await _get_project_custom_fairness_rules(
             db,
             model_record.project_id,
@@ -1042,7 +1090,7 @@ async def run_all_validations(
 
     task = run_all_validations_task.delay(
         suite_id=str(suite.id),
-        model_id=str(request.model_id),
+        model_id=str(request.model_id) if request.model_id else "",
         dataset_id=str(request.dataset_id),
         fairness_config=fairness_config,
         transparency_config=request.transparency_config,
@@ -1065,7 +1113,7 @@ async def run_all_validations(
         resource_id=suite.id,
         details={
             "validation_type": "all",
-            "model_name": model_record.name,
+            "model_name": model_record.name if model_record else "None",
             "dataset_name": dataset_record.name,
             "task_id": task.id
         }
@@ -1118,7 +1166,7 @@ async def get_task_status(task_id: str):
     elif task.state == "SUCCESS":
         response["progress"] = 100
         response["current_step"] = "Completed"
-        response["result"] = task.result
+        response["result"] = _json_safe(task.result)
     elif task.state == "FAILURE":
         response["progress"] = 0
         response["current_step"] = "Failed"
@@ -1157,16 +1205,25 @@ async def get_suite_results(
     if not suite:
         raise HTTPException(status_code=404, detail="Validation suite not found")
     
-    # Verify access - Get the model to check project_id
-    result = await db.execute(
-        select(MLModel).where(MLModel.id == suite.model_id)
-    )
-    model = result.scalar_one_or_none()
-    
-    if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
-    
-    if not await verify_access(db, current_user, model.project_id):
+    # Verify access via dataset (always non-null) — model may be null for dataset-only runs
+    if suite.model_id:
+        result = await db.execute(
+            select(MLModel).where(MLModel.id == suite.model_id)
+        )
+        model = result.scalar_one_or_none()
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        project_id_for_access = model.project_id
+    else:
+        result = await db.execute(
+            select(Dataset).where(Dataset.id == suite.dataset_id)
+        )
+        dataset_for_access = result.scalar_one_or_none()
+        if not dataset_for_access:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        project_id_for_access = dataset_for_access.project_id
+
+    if not await verify_access(db, current_user, project_id_for_access):
         raise HTTPException(status_code=403, detail="Access denied")
     
     # Build response

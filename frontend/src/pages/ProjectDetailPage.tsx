@@ -1069,7 +1069,11 @@ export default function ProjectDetailPage() {
                                                     {new Date(validation.started_at).toLocaleTimeString()}
                                                 </Typography>
                                             </TableCell>
-                                            <TableCell>{validation.model_name}</TableCell>
+                                            <TableCell>
+                                                {validation.model_name || (
+                                                    <Chip label="Dataset Only" size="small" color="info" variant="outlined" />
+                                                )}
+                                            </TableCell>
                                             <TableCell>{validation.dataset_name}</TableCell>
                                             <TableCell>
                                                 <Chip
@@ -1079,7 +1083,7 @@ export default function ProjectDetailPage() {
                                                 />
                                             </TableCell>
                                             <TableCell>
-                                                {validation.validations.fairness.completed ? (
+                                                {validation.validations?.fairness?.completed ? (
                                                     <Chip
                                                         label={`${validation.validations.fairness.passed_count}/${validation.validations.fairness.metrics_count}`}
                                                         color={validation.validations.fairness.passed_count === validation.validations.fairness.metrics_count ? 'success' : 'warning'}
@@ -1090,7 +1094,7 @@ export default function ProjectDetailPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                {validation.validations.transparency.completed ? (
+                                                {validation.validations?.transparency?.completed ? (
                                                     <Chip
                                                         label={`${validation.validations.transparency.passed_count}/${validation.validations.transparency.metrics_count}`}
                                                         color={validation.validations.transparency.passed_count === validation.validations.transparency.metrics_count ? 'success' : 'warning'}
@@ -1101,7 +1105,7 @@ export default function ProjectDetailPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell>
-                                                {validation.validations.privacy.completed ? (
+                                                {validation.validations?.privacy?.completed ? (
                                                     <Chip
                                                         label={`${validation.validations.privacy.passed_count}/${validation.validations.privacy.metrics_count}`}
                                                         color={validation.validations.privacy.passed_count === validation.validations.privacy.metrics_count ? 'success' : 'warning'}
