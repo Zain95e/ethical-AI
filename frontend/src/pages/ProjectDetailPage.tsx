@@ -989,20 +989,46 @@ export default function ProjectDetailPage() {
                                 });
                                 return point;
                             });
-                            const COLORS = ['#2e7d32', '#1565c0', '#e65100', '#6a1b9a', '#c62828', '#00838f'];
+                            const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#00bcd4', '#ffeb3b'];
+                            
                             return (
-                                <Card sx={{ mb: 3 }}>
+                                <Card sx={{ mb: 3, background: 'rgba(30, 41, 59, 0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                                     <CardContent>
-                                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#fff' }}>
                                             Fairness Metrics Over Time
                                         </Typography>
                                         <ResponsiveContainer width="100%" height={280}>
-                                            <LineChart data={chartData}>
-                                                <CartesianGrid strokeDasharray="3 3" />
-                                                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                                                <YAxis tick={{ fontSize: 11 }} domain={[0, 'auto']} tickFormatter={formatChartNumber} />
-                                                <RechartsTooltip formatter={(value) => formatChartNumber(value)} />
-                                                <Legend />
+                                            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                                                <XAxis 
+                                                    dataKey="date" 
+                                                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.6)' }} 
+                                                    axisLine={{ stroke: 'rgba(255,255,255,0.2)' }}
+                                                    tickLine={{ stroke: 'rgba(255,255,255,0.2)' }}
+                                                />
+                                                <YAxis 
+                                                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.6)' }} 
+                                                    axisLine={{ stroke: 'rgba(255,255,255,0.2)' }}
+                                                    tickLine={{ stroke: 'rgba(255,255,255,0.2)' }}
+                                                    domain={[0, 'auto']} 
+                                                    tickFormatter={formatChartNumber} 
+                                                />
+                                                <RechartsTooltip 
+                                                    formatter={(value) => formatChartNumber(value)}
+                                                    contentStyle={{ 
+                                                        backgroundColor: '#0f172a', 
+                                                        border: '1px solid rgba(255,255,255,0.2)',
+                                                        borderRadius: '8px',
+                                                        color: '#fff',
+                                                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
+                                                    }}
+                                                    itemStyle={{ padding: '2px 0' }}
+                                                    labelStyle={{ fontWeight: 700, marginBottom: '8px', color: '#94a3b8' }}
+                                                />
+                                                <Legend 
+                                                    wrapperStyle={{ paddingTop: '20px' }}
+                                                    formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>{value}</span>}
+                                                />
                                                 {Array.from(metricKeys).map((key, idx) => (
                                                     <Line
                                                         key={key}
@@ -1010,8 +1036,9 @@ export default function ProjectDetailPage() {
                                                         dataKey={key}
                                                         name={key.replace(/_/g, ' ')}
                                                         stroke={COLORS[idx % COLORS.length]}
-                                                        strokeWidth={2}
-                                                        dot={{ r: 4 }}
+                                                        strokeWidth={3}
+                                                        dot={{ r: 4, fill: COLORS[idx % COLORS.length], strokeWidth: 2, stroke: '#0f172a' }}
+                                                        activeDot={{ r: 6, strokeWidth: 0 }}
                                                         connectNulls
                                                     />
                                                 ))}

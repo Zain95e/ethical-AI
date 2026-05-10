@@ -439,12 +439,35 @@ async def run_fairness_from_predictions(
         y_true_raw = df[request.actual_column] if request.actual_column else y_pred_raw
         
         def _to_binary(series: pd.Series) -> np.ndarray:
-            if series.dtype == 'object' or series.dtype.name == 'category':
-                return (series.astype(str).str.contains('>|high|yes|true|1|approved', case=False, regex=True)).astype(int).values
-            arr = series.values
-            if not np.all(np.isin(arr, [0, 1])):
-                return (arr > 0.5).astype(int) # threshold for probability or {-1, 1}
-            return arr.astype(int)
+            # Handle numeric series first
+            if pd.api.types.is_numeric_dtype(series):
+                arr = series.values
+                if np.all(np.isin(arr, [0, 1])):
+                    return arr.astype(int)
+                # Handle probability or -1/1
+                return (arr > 0.5).astype(int) if arr.max() > 1 or arr.min() < 0 else (arr > 0.5).astype(int)
+            
+            # Handle categorical/string series
+            s_str = series.astype(str).str.strip().str.lower()
+            
+            # 1. Try common positive keywords
+            pos_keywords = ['>50k', 'high', 'yes', 'true', '1', 'approved', 'positive', 'success', 'pass']
+            pattern = '|'.join([f"^{k}$" for k in pos_keywords]) # Exact match preferred
+            mask = s_str.str.match(pattern, na=False)
+            
+            # 2. If nothing matches, try fuzzy match
+            if not mask.any():
+                fuzzy_pattern = '>|high|yes|true|1|approved|positive|success|pass'
+                mask = s_str.str.contains(fuzzy_pattern, na=False)
+            
+            # 3. Fallback: use the second most frequent value as positive if binary
+            if not mask.any() and s_str.nunique() == 2:
+                # Often the first value is the negative/majority class
+                pos_val = s_str.value_counts().index[1]
+                mask = (s_str == pos_val)
+                logger.info(f"Fell back to treating '{pos_val}' as positive class")
+                
+            return mask.astype(int).values
             
         y_pred = _to_binary(y_pred_raw)
         y_true = _to_binary(y_true_raw)
@@ -927,13 +950,17 @@ async def get_validation_history(
         
         if suite.transparency_validation_id:
             results_query = await db.execute(
-                select(ValidationResult).where(ValidationResult.validation_id == suite.transparency_validation_id)
+                select(ValidationResult)
+                .where(ValidationResult.validation_id == suite.transparency_validation_id)
+                .where(ValidationResult.principle == "transparency")
             )
             transparency_results = results_query.scalars().all()
             
         if suite.privacy_validation_id:
             results_query = await db.execute(
-                select(ValidationResult).where(ValidationResult.validation_id == suite.privacy_validation_id)
+                select(ValidationResult)
+                .where(ValidationResult.validation_id == suite.privacy_validation_id)
+                .where(ValidationResult.principle == "privacy")
             )
             privacy_results = results_query.scalars().all()
         
@@ -955,6 +982,7 @@ async def get_validation_history(
                         r.metric_name: {"value": r.metric_value, "threshold": r.threshold, "passed": r.passed}
                         for r in fairness_results
                         if r.metric_name and r.metric_value is not None
+
                     },
                 },
                 "transparency": {
@@ -1412,16 +1440,25 @@ async def get_privacy_details(
     if not suite:
         raise HTTPException(status_code=404, detail="Validation suite not found")
     
-    # Verify access
-    result = await db.execute(
-        select(MLModel).where(MLModel.id == suite.model_id)
-    )
-    model = result.scalar_one_or_none()
+    # Verify access via dataset (always present) or model
+    if suite.model_id:
+        result = await db.execute(
+            select(MLModel).where(MLModel.id == suite.model_id)
+        )
+        model = result.scalar_one_or_none()
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        project_id = model.project_id
+    else:
+        result = await db.execute(
+            select(Dataset).where(Dataset.id == suite.dataset_id)
+        )
+        dataset = result.scalar_one_or_none()
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        project_id = dataset.project_id
     
-    if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
-    
-    if not await verify_access(db, current_user, model.project_id):
+    if not await verify_access(db, current_user, project_id):
         raise HTTPException(status_code=403, detail="Access denied")
     
     # Get privacy validation
@@ -1493,16 +1530,25 @@ async def get_transparency_details(
     if not suite:
         raise HTTPException(status_code=404, detail="Validation suite not found")
     
-    # Verify access
-    result = await db.execute(
-        select(MLModel).where(MLModel.id == suite.model_id)
-    )
-    model = result.scalar_one_or_none()
+    # Verify access via dataset or model
+    if suite.model_id:
+        result = await db.execute(
+            select(MLModel).where(MLModel.id == suite.model_id)
+        )
+        model = result.scalar_one_or_none()
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        project_id = model.project_id
+    else:
+        result = await db.execute(
+            select(Dataset).where(Dataset.id == suite.dataset_id)
+        )
+        dataset = result.scalar_one_or_none()
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        project_id = dataset.project_id
     
-    if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
-    
-    if not await verify_access(db, current_user, model.project_id):
+    if not await verify_access(db, current_user, project_id):
         raise HTTPException(status_code=403, detail="Access denied")
     
     if not suite.transparency_validation_id:

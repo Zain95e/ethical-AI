@@ -947,6 +947,35 @@ async def _run_transparency_validation_async(
 
         if progress_callback:
             progress_callback(90, "Saving results")
+            
+        # Save key transparency results as ValidationResult records for history table
+        transparency_val_results = []
+        
+        # 1. Global Importance
+        transparency_val_results.append(ValidationResult(
+            validation_id=UUID(validation_id),
+            principle="transparency",
+            metric_name="Global Feature Importance",
+            metric_value=float(len(importance_dict)),
+            threshold=1.0,
+            passed=len(importance_dict) > 0,
+            details=importance_dict
+        ))
+        
+        # 2. Model Card
+        transparency_val_results.append(ValidationResult(
+            validation_id=UUID(validation_id),
+            principle="transparency",
+            metric_name="Model Card Generation",
+            metric_value=1.0,
+            threshold=1.0,
+            passed=bool(model_card),
+            details=model_card
+        ))
+        
+        for res in transparency_val_results:
+            db.add(res)
+            
         validation.progress = 90
         await db.commit()
         
@@ -1256,6 +1285,74 @@ async def _run_privacy_validation_async(
         
         if progress_callback:
             progress_callback(90, "Saving results")
+        
+        # Save key privacy results as ValidationResult records for history table
+        privacy_val_results = []
+        
+        # 1. PII Detection
+        if 'pii_detection' in checks:
+            pii_flagged = [r for r in report.pii_results if r.is_pii]
+            privacy_val_results.append(ValidationResult(
+                validation_id=UUID(validation_id),
+                principle="privacy",
+                metric_name="PII Detection",
+                metric_value=float(len(pii_flagged)),
+                threshold=0.0,
+                passed=len(pii_flagged) == 0,
+                details={"flagged_columns": [r.column for r in pii_flagged]}
+            ))
+            
+        # 2. k-Anonymity
+        if report.k_anonymity:
+            privacy_val_results.append(ValidationResult(
+                validation_id=UUID(validation_id),
+                principle="privacy",
+                metric_name=f"k-Anonymity (k={report.k_anonymity.k_value})",
+                metric_value=float(report.k_anonymity.actual_min_k),
+                threshold=float(report.k_anonymity.k_value),
+                passed=report.k_anonymity.satisfies_k,
+                details=report.k_anonymity.to_dict()
+            ))
+            
+        # 3. l-Diversity
+        if report.l_diversity:
+            privacy_val_results.append(ValidationResult(
+                validation_id=UUID(validation_id),
+                principle="privacy",
+                metric_name=f"l-Diversity (l={report.l_diversity.l_value})",
+                metric_value=float(report.l_diversity.actual_min_l),
+                threshold=float(report.l_diversity.l_value),
+                passed=report.l_diversity.satisfies_l,
+                details=report.l_diversity.to_dict()
+            ))
+            
+        # 4. Differential Privacy
+        if dp_result:
+            privacy_val_results.append(ValidationResult(
+                validation_id=UUID(validation_id),
+                principle="privacy",
+                metric_name="Differential Privacy",
+                metric_value=float(dp_result.measured_epsilon),
+                threshold=float(dp_target_epsilon),
+                passed=dp_result.budget_satisfied,
+                details=dp_result.to_dict()
+            ))
+            
+        # 5. HIPAA
+        if hipaa_result:
+            privacy_val_results.append(ValidationResult(
+                validation_id=UUID(validation_id),
+                principle="privacy",
+                metric_name="HIPAA Safe Harbor",
+                metric_value=float(hipaa_result.passed_checks),
+                threshold=float(hipaa_result.total_checks),
+                passed=hipaa_result.overall_passed,
+                details=hipaa_result.to_dict()
+            ))
+            
+        for res in privacy_val_results:
+            db.add(res)
+            
         validation.progress = 90
         await db.commit()
         

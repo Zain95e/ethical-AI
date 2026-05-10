@@ -275,9 +275,9 @@ class ReportGenerator:
 
         report = {
             "validation_suite_id": str(suite.id),
-            "project_id": str(suite.model.project_id) if suite.model else None,
+            "project_id": str(suite.model.project_id) if suite.model else str(suite.dataset.project_id),
             "project_name": None,
-            "model_name": suite.model.name if suite.model else "Unknown",
+            "model_name": suite.model.name if suite.model else "Dataset only",
             "dataset_name": suite.dataset.name if suite.dataset else "Unknown",
             "validation_date": suite.started_at.isoformat() if suite.started_at else None,
             "overall_status": "pass" if suite.overall_passed else "fail",
@@ -288,8 +288,9 @@ class ReportGenerator:
             "generated_at": datetime.utcnow().isoformat(),
         }
 
-        if suite.model:
-            result = await self.db.execute(select(Project).where(Project.id == suite.model.project_id))
+        project_id_to_fetch = suite.model.project_id if suite.model else suite.dataset.project_id
+        if project_id_to_fetch:
+            result = await self.db.execute(select(Project).where(Project.id == project_id_to_fetch))
             project = result.scalar_one_or_none()
             report["project_name"] = project.name if project else "Unknown Project"
 
@@ -366,10 +367,11 @@ class ReportGenerator:
         if not project:
             raise ValueError("Project not found")
 
+        from app.models.dataset import Dataset
         suites_result = await self.db.execute(
             select(ValidationSuite)
-            .join(MLModel, ValidationSuite.model_id == MLModel.id)
-            .where(MLModel.project_id == project_id)
+            .join(Dataset, ValidationSuite.dataset_id == Dataset.id)
+            .where(Dataset.project_id == project_id)
             .order_by(ValidationSuite.started_at.desc())
         )
         suites = suites_result.scalars().all()

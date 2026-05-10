@@ -43,12 +43,22 @@ async def _verify_suite_access(db: AsyncSession, suite_id: UUID, current_user: U
     if not suite:
         raise HTTPException(status_code=404, detail="Validation suite not found")
 
-    result = await db.execute(select(MLModel).where(MLModel.id == suite.model_id))
-    model = result.scalar_one_or_none()
-    if not model:
-        raise HTTPException(status_code=404, detail="Model not found")
+    if suite.model_id:
+        result = await db.execute(select(MLModel).where(MLModel.id == suite.model_id))
+        model = result.scalar_one_or_none()
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        project_id = model.project_id
+    else:
+        # For dataset-only runs, verify via dataset project_id
+        from app.models.dataset import Dataset
+        result = await db.execute(select(Dataset).where(Dataset.id == suite.dataset_id))
+        dataset = result.scalar_one_or_none()
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        project_id = dataset.project_id
 
-    await _verify_project_access(db, model.project_id, current_user)
+    await _verify_project_access(db, project_id, current_user)
     return suite
 
 
