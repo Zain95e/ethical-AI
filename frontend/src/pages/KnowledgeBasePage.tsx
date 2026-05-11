@@ -3,7 +3,7 @@
  * Simplified for easy understanding with analogies and examples for every rule.
  */
 
-import { useMemo, useState } from 'react';
+import React from 'react';
 import {
     Box,
     Container,
@@ -11,18 +11,8 @@ import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
-    Chip,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
     Divider,
     Alert,
-    TextField,
-    InputAdornment,
 } from '@mui/material';
 import {
     ExpandMore as ExpandIcon,
@@ -30,9 +20,7 @@ import {
     Security as PrivacyIcon,
     Visibility as TransparencyIcon,
     Gavel as AccountabilityIcon,
-    AccountTree as TraceIcon,
     MenuBook as BookIcon,
-    Search as SearchIcon,
 } from '@mui/icons-material';
 
 /* ---------- Styled section ---------- */
@@ -62,10 +50,6 @@ function P({ children }: { children: React.ReactNode }) {
     return <Typography variant="body2" sx={{ mb: 1.5, lineHeight: 1.7 }}>{children}</Typography>;
 }
 
-function H3({ children, id }: { children: React.ReactNode; id?: string }) {
-    return <Typography id={id} variant="subtitle1" fontWeight={700} sx={{ mt: 2.3, mb: 1, color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>{children}</Typography>;
-}
-
 function RuleBox({ title, idea, analogy, example }: { title: string; idea: string; analogy: string; example: string }) {
     return (
         <Box sx={{ p: 2, mb: 3, bgcolor: 'rgba(255,255,255,0.03)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -87,8 +71,6 @@ function RuleBox({ title, idea, analogy, example }: { title: string; idea: strin
 /* ---------- Page ---------- */
 
 export default function KnowledgeBasePage() {
-    const [search, setSearch] = useState('');
-
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
             {/* Header */}

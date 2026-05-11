@@ -492,11 +492,12 @@ async def load_benchmark_dataset(
     Load a pre-configured benchmark dataset into a project.
     
     Available datasets:
-    - "compas": COMPAS Recidivism dataset (criminal justice)
-    - "adult_income": Adult Income/Census dataset (employment fairness)
-    - "german_credit": German Credit dataset (financial fairness)
-    - "bank_marketing": Bank Marketing dataset (financial outreach fairness)
-    - "diabetes_readmission": Diabetes Readmission dataset (healthcare fairness)
+    - "adult_income":       Adult Income — Logistic Regression (Finance / Social Policy)
+    - "credit_default":     Credit Card Default — Random Forest (Banking / Credit Risk)
+    - "compas_recidivism":  Recidivism Risk — Gradient Boosting (Criminal Justice)
+    - "heart_disease":      Heart Disease — SVM (Healthcare / Medical Diagnosis)
+    - "ibm_hr_attrition":   Employee Attrition — MLP Neural Network (HR / People Analytics)
+    - "student_performance": Student Pass/Fail — Decision Tree (Education)
     
     Args:
         project_id: Project to load dataset into

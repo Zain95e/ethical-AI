@@ -34,6 +34,7 @@ import {
 import {
     ArrowBack as BackIcon,
     CloudUpload as UploadIcon,
+    CloudDownload as ImportIcon,
     Delete as DeleteIcon,
     PlayArrow as RunIcon,
     ModelTraining as ModelIcon,
@@ -588,7 +589,14 @@ export default function ProjectDetailPage() {
 
             {/* Models Tab */}
             <TabPanel value={tab} index={0}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<ImportIcon />}
+                        onClick={() => setBenchmarkLoaderOpen(true)}
+                    >
+                        Import Benchmark
+                    </Button>
                     <Button
                         variant="contained"
                         startIcon={<UploadIcon />}
@@ -640,7 +648,23 @@ export default function ProjectDetailPage() {
                                             </Box>
                                         </TableCell>
                                         <TableCell>
-                                            <Chip label={model.model_type} size="small" />
+                                            <Tooltip
+                                                title={model.model_metadata?.algorithm || model.model_type}
+                                                placement="top"
+                                            >
+                                                <Chip
+                                                    label={
+                                                        model.model_metadata?.algorithm
+                                                            ? model.model_metadata.algorithm.split('(')[0].trim()
+                                                            : model.model_type
+                                                    }
+                                                    size="small"
+                                                    color={
+                                                        model.model_metadata?.benchmark ? 'primary' : 'default'
+                                                    }
+                                                    variant={model.model_metadata?.benchmark ? 'outlined' : 'filled'}
+                                                />
+                                            </Tooltip>
                                         </TableCell>
                                         <TableCell>{model.version}</TableCell>
                                         <TableCell>{(model.file_size / 1024).toFixed(1)} KB</TableCell>
@@ -671,7 +695,7 @@ export default function ProjectDetailPage() {
                         variant="outlined"
                         onClick={() => setBenchmarkLoaderOpen(true)}
                     >
-                        Load Benchmark Dataset
+                        Import Benchmark
                     </Button>
                     <Button
                         variant="contained"
@@ -1318,9 +1342,18 @@ export default function ProjectDetailPage() {
                 open={benchmarkLoaderOpen}
                 onClose={() => setBenchmarkLoaderOpen(false)}
                 projectId={id!}
-                onSuccess={(datasetName) => {
-                    queryClient.invalidateQueries({ queryKey: ['datasets', id] });
-                    alert(`Successfully loaded ${datasetName} dataset!`);
+                existingModelNames={(models ?? []).map((m: any) => m.name)}
+                existingDatasetNames={(datasets ?? []).map((d: any) => d.name)}
+                onSuccess={(name, type) => {
+                    if (type === 'model') {
+                        queryClient.invalidateQueries({ queryKey: ['models', id] });
+                        queryClient.invalidateQueries({ queryKey: ['project', id] });
+                        alert(`Successfully imported model: ${name}`);
+                    } else {
+                        queryClient.invalidateQueries({ queryKey: ['datasets', id] });
+                        queryClient.invalidateQueries({ queryKey: ['project', id] });
+                        alert(`Successfully imported dataset: ${name}`);
+                    }
                 }}
             />
         </Container>

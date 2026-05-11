@@ -352,7 +352,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness"],
             "reference": "General best practices",
-            "recommended_datasets": ["adult_income", "german_credit"],
+            "recommended_datasets": ["adult_income", "credit_default"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Demographic parity ratio"},
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Equalized odds ratio"},
@@ -381,7 +381,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["privacy"],
             "reference": "General best practices",
-            "recommended_datasets": ["adult_income", "diabetes_readmission"],
+            "recommended_datasets": ["adult_income", "heart_disease"],
             "items": [
                 {"metric": "pii_count", "operator": "==", "value": 0, "principle": "privacy", "description": "Zero PII columns allowed"},
             ],
@@ -400,7 +400,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness"],
             "reference": "Equal Credit Opportunity Act (ECOA), Fair Housing Act",
-            "recommended_datasets": ["german_credit", "bank_marketing"],
+            "recommended_datasets": ["credit_default", "adult_income"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "80 % rule for demographic parity"},
                 {"metric": "disparate_impact_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Disparate impact ratio ≥ 0.80"},
@@ -420,7 +420,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency"],
             "reference": "HIPAA, FDA guidelines for AI/ML in medical devices",
-            "recommended_datasets": ["diabetes_readmission"],
+            "recommended_datasets": ["heart_disease"],
             "items": [
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.03, "principle": "fairness", "description": "Very strict – healthcare critical"},
                 {"metric": "shap_coverage", "operator": ">=", "value": 1.0, "principle": "transparency", "description": "100 % SHAP coverage – every prediction explainable"},
@@ -460,7 +460,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness"],
             "reference": "EEOC Uniform Guidelines on Employee Selection",
-            "recommended_datasets": ["adult_income"],
+            "recommended_datasets": ["adult_income", "ibm_hr_attrition"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Demographic parity ≥ 0.80"},
                 {"metric": "four_fifths_rule", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Four-fifths rule compliance"},
@@ -480,7 +480,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["privacy", "transparency"],
             "reference": "GDPR Article 22 (automated decision-making)",
-            "recommended_datasets": ["adult_income", "bank_marketing"],
+            "recommended_datasets": ["adult_income", "credit_default"],
             "items": [
                 {"metric": "pii_without_consent", "operator": "==", "value": 0, "principle": "privacy", "description": "No PII without consent"},
                 {"metric": "shap_coverage", "operator": ">=", "value": 1.0, "principle": "transparency", "description": "Right to explanation (SHAP required)"},
@@ -500,7 +500,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency"],
             "reference": "Title VI of Civil Rights Act",
-            "recommended_datasets": ["adult_income"],
+            "recommended_datasets": ["adult_income", "student_performance"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.75, "principle": "fairness", "description": "Demographic parity ≥ 0.75"},
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.05, "principle": "fairness", "description": "Equal opportunity difference ≤ 0.05"},
@@ -517,7 +517,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "accountability"],
             "reference": "ECOA, Basel model governance guidance",
-            "recommended_datasets": ["german_credit", "bank_marketing"],
+            "recommended_datasets": ["credit_default", "adult_income"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.82, "principle": "fairness", "description": "Selection parity across protected groups"},
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.04, "principle": "fairness", "description": "Close true-positive parity for approvals"},
@@ -534,7 +534,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "accountability"],
             "reference": "FATF risk-based supervision best practices",
-            "recommended_datasets": ["bank_marketing", "adult_income"],
+            "recommended_datasets": ["credit_default", "adult_income"],
             "items": [
                 {"metric": "false_positive_rate_difference", "operator": "<=", "value": 0.05, "principle": "fairness", "description": "Cap disparity in false positives"},
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.82, "principle": "fairness", "description": "Maintain balanced odds between groups"},
@@ -550,7 +550,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "privacy"],
             "reference": "FDA SaMD, clinical AI governance guidance",
-            "recommended_datasets": ["diabetes_readmission"],
+            "recommended_datasets": ["heart_disease"],
             "items": [
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.03, "principle": "fairness", "description": "Maintain equitable sensitivity across groups"},
                 {"metric": "calibration_difference", "operator": "<=", "value": 0.03, "principle": "fairness", "description": "Comparable risk calibration by group"},
@@ -567,7 +567,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "accountability"],
             "reference": "Hospital quality and equity reporting best practices",
-            "recommended_datasets": ["diabetes_readmission"],
+            "recommended_datasets": ["heart_disease"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Parity in positive intervention recommendations"},
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.83, "principle": "fairness", "description": "Balanced false-positive and false-negative rates"},
@@ -584,7 +584,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "accountability", "transparency"],
             "reference": "Algorithmic accountability in judicial decision support",
-            "recommended_datasets": ["compas"],
+            "recommended_datasets": ["compas_recidivism"],
             "items": [
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.86, "principle": "fairness", "description": "Maintain near-parity in error rates"},
                 {"metric": "false_positive_rate_difference", "operator": "<=", "value": 0.04, "principle": "fairness", "description": "Limit disparate over-prediction of risk"},
@@ -601,7 +601,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "privacy", "transparency"],
             "reference": "EEOC and inclusive hiring framework",
-            "recommended_datasets": ["adult_income"],
+            "recommended_datasets": ["adult_income", "ibm_hr_attrition"],
             "items": [
                 {"metric": "four_fifths_rule", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Maintain four-fifths compliance"},
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.04, "principle": "fairness", "description": "Equalize true positive opportunity"},
@@ -618,7 +618,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "accountability"],
             "reference": "Education anti-discrimination and accountability standards",
-            "recommended_datasets": ["adult_income"],
+            "recommended_datasets": ["adult_income", "student_performance"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.78, "principle": "fairness", "description": "Maintain broad access parity"},
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Balanced error rates across student groups"},
@@ -635,7 +635,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "privacy", "transparency", "accountability"],
             "reference": "Public sector automated decision-making safeguards",
-            "recommended_datasets": ["adult_income", "bank_marketing"],
+            "recommended_datasets": ["adult_income", "credit_default"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Fair access to service recommendations"},
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.05, "principle": "fairness", "description": "Comparable opportunity for approvals"},
@@ -653,7 +653,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "accountability"],
             "reference": "Banking fraud model governance practices",
-            "recommended_datasets": ["bank_marketing", "german_credit"],
+            "recommended_datasets": ["credit_default", "adult_income"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Balanced fraud flag rates across groups"},
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.82, "principle": "fairness", "description": "Comparable false-positive and false-negative rates"},
@@ -670,7 +670,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "privacy", "transparency"],
             "reference": "Insurance underwriting responsible AI guidance",
-            "recommended_datasets": ["german_credit", "adult_income"],
+            "recommended_datasets": ["credit_default", "adult_income"],
             "items": [
                 {"metric": "disparate_impact_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Avoid adverse impact in underwriting outcomes"},
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.05, "principle": "fairness", "description": "Equal opportunity gap must remain small"},
@@ -704,7 +704,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "privacy", "accountability"],
             "reference": "Hospital operational AI responsibility standards",
-            "recommended_datasets": ["diabetes_readmission"],
+            "recommended_datasets": ["heart_disease"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Equitable allocation recommendations"},
                 {"metric": "disparate_impact_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "No severe disparate impact"},
@@ -721,7 +721,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "accountability"],
             "reference": "Workplace AI governance and anti-discrimination standards",
-            "recommended_datasets": ["adult_income"],
+            "recommended_datasets": ["adult_income", "ibm_hr_attrition"],
             "items": [
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.04, "principle": "fairness", "description": "Promotion opportunity gaps must be controlled"},
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Maintain balanced promotion rates"},
@@ -738,7 +738,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "privacy"],
             "reference": "Educational equity and learner data protections",
-            "recommended_datasets": ["adult_income"],
+            "recommended_datasets": ["student_performance"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.78, "principle": "fairness", "description": "Balanced support recommendations"},
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Comparable model errors by student group"},
@@ -755,7 +755,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "accountability"],
             "reference": "Justice-sector risk assessment accountability standards",
-            "recommended_datasets": ["compas"],
+            "recommended_datasets": ["compas_recidivism"],
             "items": [
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.86, "principle": "fairness", "description": "Parity in false-positive and false-negative rates"},
                 {"metric": "disparate_impact_ratio", "operator": ">=", "value": 0.82, "principle": "fairness", "description": "Limit disparate impact by protected group"},
@@ -772,7 +772,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "privacy"],
             "reference": "Consumer-facing AI responsible personalization guidance",
-            "recommended_datasets": ["bank_marketing", "adult_income"],
+            "recommended_datasets": ["credit_default", "adult_income"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Balanced recommendation exposure"},
                 {"metric": "equal_opportunity_difference", "operator": "<=", "value": 0.05, "principle": "fairness", "description": "Opportunity gaps must remain bounded"},
@@ -789,7 +789,7 @@ DOMAIN_TEMPLATES: List[Dict[str, Any]] = [
         "rules": {
             "principles": ["fairness", "transparency", "accountability", "privacy"],
             "reference": "Public administration AI transparency and accountability standards",
-            "recommended_datasets": ["adult_income", "bank_marketing"],
+            "recommended_datasets": ["adult_income", "credit_default"],
             "items": [
                 {"metric": "demographic_parity_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Fair case prioritization rates"},
                 {"metric": "equalized_odds_ratio", "operator": ">=", "value": 0.80, "principle": "fairness", "description": "Balanced error rates across groups"},

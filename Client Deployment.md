@@ -11,21 +11,21 @@ Run from project root:
 docker login
 
 # 2) Build and tag images
-docker build -t <dockerhub-namespace>/ethical-ai-backend:latest ./backend
-docker build -t <dockerhub-namespace>/ethical-ai-frontend:latest -f ./frontend/Dockerfile.prod ./frontend
+docker build -t zynalex9/ethical-ai-backend:latest ./backend
+docker build -t zynalex9/ethical-ai-frontend:latest -f ./frontend/Dockerfile.prod ./frontend
 
 # 3) Push images
-docker push <dockerhub-namespace>/ethical-ai-backend:latest
-docker push <dockerhub-namespace>/ethical-ai-frontend:latest
+docker push zynalex9/ethical-ai-backend:latest
+docker push zynalex9/ethical-ai-frontend:latest
 ```
 
 Optional versioned release:
 
 ```bash
-docker tag <dockerhub-namespace>/ethical-ai-backend:latest <dockerhub-namespace>/ethical-ai-backend:v1.0.0
-docker tag <dockerhub-namespace>/ethical-ai-frontend:latest <dockerhub-namespace>/ethical-ai-frontend:v1.0.0
-docker push <dockerhub-namespace>/ethical-ai-backend:v1.0.0
-docker push <dockerhub-namespace>/ethical-ai-frontend:v1.0.0
+docker tag zynalex9/ethical-ai-backend:latest zynalex9/ethical-ai-backend:v1.0.0
+docker tag zynalex9/ethical-ai-frontend:latest zynalex9/ethical-ai-frontend:v1.0.0
+docker push zynalex9/ethical-ai-backend:v1.0.0
+docker push zynalex9/ethical-ai-frontend:v1.0.0
 ```
 
 ## B) Client: run the platform

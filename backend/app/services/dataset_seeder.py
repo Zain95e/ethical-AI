@@ -26,72 +26,132 @@ logger = logging.getLogger(__name__)
 class BenchmarkDatasetSeeder:
     """
     Service for loading benchmark datasets into projects.
-    
+
     Provides one-click loading of pre-configured benchmark datasets
     with automatic sensitive attribute detection and metadata.
+    The datasets are the locally-trained ones stored under
+    backend/dataset-models/datasets/.
     """
-    
-    # Dataset metadata configuration
-    BENCHMARK_DATASETS = {
-        "compas": {
-            "name": "COMPAS Recidivism",
-            "description": "Criminal recidivism risk assessment dataset from Broward County, Florida. Used to study racial bias in algorithmic risk assessment tools.",
-            "filename": "compas-scores-raw.csv",
-            "target_column": "two_year_recid",
-            "sensitive_attributes": ["race", "sex", "age_cat"],
-            "key_features": ["age", "priors_count", "c_charge_degree", "decile_score"],
-            "domain": "criminal_justice",
-            "reference": "ProPublica COMPAS Analysis (2016)"
-        },
+
+    # Absolute path to the locally trained datasets
+    _BASE = Path(__file__).resolve().parent.parent.parent / "dataset-models" / "datasets"
+
+    # Dataset metadata configuration – 6 locally trained datasets
+    BENCHMARK_DATASETS: Dict[str, Dict] = {
         "adult_income": {
-            "name": "Adult Income (Census)",
-            "description": "Census data from 1994 used to predict whether income exceeds $50K/year. Widely used for fairness research.",
-            "filename": "adult.csv",
-            "target_column": "income",
-            "sensitive_attributes": ["sex", "race", "native-country"],
-            "key_features": ["age", "education", "occupation", "hours-per-week", "marital-status"],
-            "domain": "employment",
-            "reference": "UCI Machine Learning Repository"
-        },
-        "german_credit": {
-            "name": "German Credit",
-            "description": "Credit risk assessment dataset from a German bank. Used for fairness in lending and ECOA compliance studies.",
-            "filename": "german_credit_data.csv",
-            "target_column": "credit_risk",
-            "sensitive_attributes": ["sex", "age", "foreign_worker"],
-            "key_features": ["duration", "credit_amount", "installment_rate", "property", "existing_credits"],
+            "name": "Adult Income (Logistic Regression)",
+            "description": (
+                "Census data predicting whether an adult earns >$50K/year. "
+                "Classic fairness benchmark for Finance / Social Policy. "
+                "Trained with Logistic Regression (StandardScaler pipeline). "
+                "Accuracy: 82.3 %  |  Sensitive attribute: sex"
+            ),
+            "filename": "adult_income.csv",
+            "target_column": "income_binary",
+            "sensitive_attributes": ["sex"],
+            "key_features": ["age", "education_num", "hours_per_week", "capital_gain", "capital_loss", "sex_encoded", "fnlwgt"],
             "domain": "finance",
-            "reference": "UCI Machine Learning Repository - Statlog German Credit"
+            "reference": "UCI Adult / Census Income Dataset (30 162 rows)",
+            "model_key": "model_1_income_logreg",
+            "model_type": "Logistic Regression",
+            "accuracy": 0.8228,
         },
-        "bank_marketing": {
-            "name": "Bank Marketing",
-            "description": "Portuguese bank telemarketing dataset used to predict subscription to term deposits and analyze fairness in financial outreach models.",
-            "filename": "bank_marketing.csv",
-            "target_column": "y",
-            "sensitive_attributes": ["age", "marital", "education"],
-            "key_features": ["job", "balance", "housing", "loan", "campaign"],
+        "credit_default": {
+            "name": "Credit Card Default (Random Forest)",
+            "description": (
+                "Taiwan credit-card dataset predicting payment default. "
+                "Tests gender-based fairness in Banking / Credit Risk. "
+                "Trained with Random Forest (150 trees, max_depth=8). "
+                "Accuracy: 81.9 %  |  Sensitive attribute: SEX_label"
+            ),
+            "filename": "credit_default.csv",
+            "target_column": "default",
+            "sensitive_attributes": ["SEX_label"],
+            "key_features": ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", "BILL_AMT1", "PAY_AMT1"],
             "domain": "finance",
-            "reference": "UCI Bank Marketing Dataset"
+            "reference": "UCI Default of Credit Card Clients Dataset (30 000 rows)",
+            "model_key": "model_2_credit_random_forest",
+            "model_type": "Random Forest",
+            "accuracy": 0.8185,
         },
-        "diabetes_readmission": {
-            "name": "Diabetes Readmission",
-            "description": "Hospital readmission dataset for diabetic patients used to evaluate healthcare prediction fairness and transparency.",
-            "filename": "diabetes_130_us_hospitals.csv",
-            "target_column": "readmitted",
-            "sensitive_attributes": ["race", "gender", "age"],
-            "key_features": ["time_in_hospital", "num_lab_procedures", "num_medications", "number_diagnoses"],
+        "compas_recidivism": {
+            "name": "Recidivism Risk (Gradient Boosting)",
+            "description": (
+                "COMPAS recidivism dataset predicting 2-year reoffending risk. "
+                "Replicates the algorithm studied for racial bias in Criminal Justice. "
+                "Trained with Gradient Boosting (200 estimators, lr=0.05). "
+                "Accuracy: 68.8 %  |  Sensitive attribute: race"
+            ),
+            "filename": "compas_recidivism.csv",
+            "target_column": "two_year_recid",
+            "sensitive_attributes": ["race"],
+            "key_features": ["age", "sex_enc", "juv_fel_count", "juv_misd_count", "juv_other_count", "priors_count", "charge_enc"],
+            "domain": "criminal_justice",
+            "reference": "ProPublica COMPAS Analysis (2016) – 7 214 rows",
+            "model_key": "model_3_recidivism_gbm",
+            "model_type": "Gradient Boosting",
+            "accuracy": 0.6881,
+        },
+        "heart_disease": {
+            "name": "Heart Disease (SVM)",
+            "description": (
+                "Cleveland Heart Disease dataset detecting cardiac disease presence. "
+                "Tests sex and age disparities in Healthcare / Medical Diagnosis. "
+                "Trained with SVM (RBF kernel, StandardScaler pipeline). "
+                "Accuracy: 86.7 %  |  Sensitive attribute: sex_label"
+            ),
+            "filename": "heart_disease.csv",
+            "target_column": "target",
+            "sensitive_attributes": ["sex_label"],
+            "key_features": ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalch", "exang", "oldpeak", "slope", "ca", "thal"],
             "domain": "healthcare",
-            "reference": "UCI Diabetes 130-US Hospitals Dataset"
-        }
+            "reference": "UCI Heart Disease Dataset (299 rows)",
+            "model_key": "model_4_heart_svm",
+            "model_type": "SVM (RBF kernel)",
+            "accuracy": 0.8667,
+        },
+        "ibm_hr_attrition": {
+            "name": "Employee Attrition (MLP Neural Network)",
+            "description": (
+                "IBM HR Analytics dataset predicting employee attrition. "
+                "Tests gender and age fairness in HR / People Analytics. "
+                "Trained with MLP Neural Network (128→64→32 ReLU, StandardScaler pipeline). "
+                "Accuracy: 86.7 %  |  Sensitive attribute: Gender"
+            ),
+            "filename": "ibm_hr_attrition.csv",
+            "target_column": "Attrition_binary",
+            "sensitive_attributes": ["Gender"],
+            "key_features": ["Age", "DailyRate", "DistanceFromHome", "Education", "EnvironmentSatisfaction", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome", "NumCompaniesWorked", "OverTime_enc", "PerformanceRating", "RelationshipSatisfaction", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion"],
+            "domain": "employment",
+            "reference": "IBM HR Analytics Employee Attrition Dataset (1 470 rows)",
+            "model_key": "model_5_attrition_mlp",
+            "model_type": "MLP Neural Network",
+            "accuracy": 0.8673,
+        },
+        "student_performance": {
+            "name": "Student Pass/Fail (Decision Tree)",
+            "description": (
+                "Portuguese student performance dataset predicting pass/fail outcomes. "
+                "Tests gender and urban/rural fairness in Education / Academic Performance. "
+                "Trained with Decision Tree (max_depth=6, balanced class weights). "
+                "Accuracy: 82.3 %  |  Sensitive attribute: sex"
+            ),
+            "filename": "student_performance.csv",
+            "target_column": "pass_fail",
+            "sensitive_attributes": ["sex"],
+            "key_features": ["age", "sex_enc", "address_enc", "Medu", "Fedu", "traveltime", "studytime", "failures", "famsup_enc", "paid_enc", "internet_enc", "romantic_enc", "higher_enc", "freetime", "goout", "Dalc", "Walc", "health", "absences", "G1", "G2"],
+            "domain": "education",
+            "reference": "UCI Student Performance Dataset (395 rows)",
+            "model_key": "model_6_student_decision_tree",
+            "model_type": "Decision Tree",
+            "accuracy": 0.8228,
+        },
     }
     
     def __init__(self):
-        """Initialize the seeder with benchmark dataset path."""
-        # Get the path to benchmark datasets
-        current_file = Path(__file__)
-        self.benchmark_dir = current_file.parent.parent / "datasets" / "benchmark"
-
-        # Create the directory so availability endpoints work even before files are added.
+        """Initialize the seeder. Datasets live in the class-level _BASE directory."""
+        # Ensure the source directory exists (read-only from the app's perspective)
+        self.benchmark_dir = self._BASE
         self.benchmark_dir.mkdir(parents=True, exist_ok=True)
     
     async def seed_benchmark_datasets(
@@ -106,7 +166,9 @@ class BenchmarkDatasetSeeder:
         
         Args:
             project_id: Target project UUID
-            dataset_key: Key identifying the benchmark dataset (for example: "compas", "adult_income", "german_credit", "bank_marketing", "diabetes_readmission")
+            dataset_key: Key identifying the benchmark dataset.
+                Valid options: "adult_income", "credit_default", "compas_recidivism",
+                               "heart_disease", "ibm_hr_attrition", "student_performance"
             db: Database session
             user_id: User performing the operation
             

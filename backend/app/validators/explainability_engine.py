@@ -540,9 +540,9 @@ class ExplainabilityEngine:
         # Calculate metrics
         metrics = {
             "accuracy": float(accuracy_score(y_test, y_pred)),
-            "precision": float(precision_score(y_test, y_pred, zero_division=0)),
-            "recall": float(recall_score(y_test, y_pred, zero_division=0)),
-            "f1_score": float(f1_score(y_test, y_pred, zero_division=0))
+            "precision": float(precision_score(y_test, y_pred, average='weighted', zero_division=0)),
+            "recall": float(recall_score(y_test, y_pred, average='weighted', zero_division=0)),
+            "f1_score": float(f1_score(y_test, y_pred, average='weighted', zero_division=0))
         }
         
         # Build model card

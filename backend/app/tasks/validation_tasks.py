@@ -58,6 +58,72 @@ def _resolve_dataset_file_path(stored_path: str) -> str:
     return str(candidate_from_uploads)
 
 
+# Canonical location of the locally-trained benchmark model files.
+_BENCHMARK_MODELS_SOURCE = (
+    Path(__file__).resolve().parent.parent.parent / "dataset-models" / "trained_models"
+)
+
+
+def _resolve_model_file_path(model_record: Any) -> str:
+    """Resolve a model's file path and self-heal benchmark models whose copy was lost.
+
+    When a benchmark model record was created before the timestamped-filename
+    fix, two records could share the same destination path.  Deleting one
+    deleted the shared file, leaving the other record pointing to a missing
+    file.  This helper detects that situation and re-copies the source file
+    from ``dataset-models/trained_models/`` so the validation can proceed
+    without requiring the user to re-import.
+    """
+    stored_path = model_record.file_path
+    p = Path(stored_path)
+
+    # Happy path — file is right where the DB says it is.
+    if p.exists():
+        return str(p)
+
+    # ── Self-heal for benchmark models ────────────────────────────────
+    meta = model_record.model_metadata or {}
+    if meta.get("benchmark") and meta.get("model_key"):
+        model_key: str = meta["model_key"]
+        # Find the source filename from the key (e.g. "model_3_recidivism_gbm")
+        # by matching the stem of the stored path or looking in the source dir.
+        source_candidates = list(_BENCHMARK_MODELS_SOURCE.glob(f"{model_key}.*"))
+        if not source_candidates:
+            # Fallback: use the basename of the stored path to find the source
+            stored_stem = p.stem  # e.g. "model_3_recidivism_gbm_20260511_202100"
+            # Strip timestamp suffix (last _YYYYMMDD_HHMMSS if present)
+            import re
+            base_stem = re.sub(r"_\d{8}_\d{6}$", "", stored_stem)
+            source_candidates = list(_BENCHMARK_MODELS_SOURCE.glob(f"{base_stem}.*"))
+
+        if source_candidates:
+            source_file = source_candidates[0]
+            dest_dir = p.parent
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            import shutil as _shutil
+            _shutil.copy2(source_file, p)
+            logger.info(
+                "Self-healed missing benchmark model file: copied '%s' → '%s'",
+                source_file, p,
+            )
+            return str(p)
+
+        logger.error(
+            "Benchmark model '%s' (key=%s) file missing at '%s' and source not found in '%s'",
+            model_record.name, model_key, stored_path, _BENCHMARK_MODELS_SOURCE,
+        )
+
+    # ── Absolute-path normalisation for non-benchmark models ──────────
+    if not p.is_absolute():
+        backend_dir = Path(settings.upload_dir).resolve().parent
+        candidate = (backend_dir / p).resolve()
+        if candidate.exists():
+            return str(candidate)
+
+    # Return as-is and let the caller raise a clean error.
+    return str(p)
+
+
 # Create async engine for tasks
 engine = create_async_engine(
     settings.database_url,
@@ -223,8 +289,10 @@ async def _run_fairness_validation_async(
             return [_convert_to_json_serializable(item) for item in obj]
         elif isinstance(obj, (np.integer, np.int64, np.int32)):
             return int(obj)
-        elif isinstance(obj, (np.floating, np.float64, np.float32)):
-            return float(obj)
+        elif isinstance(obj, (np.floating, np.float64, np.float32, float)):
+            val = float(obj)
+            import math
+            return None if math.isnan(val) or math.isinf(val) else val
         elif isinstance(obj, (np.bool_, bool)):
             return bool(obj)
         elif isinstance(obj, np.ndarray):
@@ -313,8 +381,8 @@ async def _run_fairness_validation_async(
             
             logger.info(f"X shape after encoding: {X.shape}")
             
-            # Load model and get predictions
-            model = UniversalModelLoader.load(model_record.file_path)
+            # Load model and get predictions (self-heals missing benchmark files)
+            model = UniversalModelLoader.load(_resolve_model_file_path(model_record))
             logger.info(f"Model loaded: {type(model).__name__}, wrapper type: {model.model_type}")
             
             # Feature matching (resilient mode: fill missing with zeros, drop extras)
@@ -357,8 +425,8 @@ async def _run_fairness_validation_async(
             
             logger.info(f"X shape after encoding: {X.shape}")
             
-            # Load model
-            model = UniversalModelLoader.load(model_record.file_path)
+            # Load model (self-heals missing benchmark files)
+            model = UniversalModelLoader.load(_resolve_model_file_path(model_record))
             logger.info(f"Model loaded: {type(model).__name__}, wrapper type: {model.model_type}")
             
             # Feature matching (resilient mode: fill missing with zeros, drop extras)
@@ -442,8 +510,8 @@ async def _run_fairness_validation_async(
                 validation_id=UUID(validation_id),
                 principle="fairness",
                 metric_name=metric.metric_name,
-                metric_value=float(metric.overall_value) if metric.overall_value is not None else None,
-                threshold=float(metric.threshold) if metric.threshold is not None else None,
+                metric_value=_convert_to_json_serializable(metric.overall_value),
+                threshold=_convert_to_json_serializable(metric.threshold),
                 passed=bool(metric.passed),
                 details={
                     "by_group": _convert_to_json_serializable(metric.by_group),
@@ -708,8 +776,8 @@ async def _run_transparency_validation_async(
         validation.progress = 30
         await db.commit()
         
-        # Load model and dataset
-        model = UniversalModelLoader.load(model_record.file_path)
+        # Load model and dataset (self-heals missing benchmark files)
+        model = UniversalModelLoader.load(_resolve_model_file_path(model_record))
         resolved_dataset_path = _resolve_dataset_file_path(dataset_record.file_path)
         if not os.path.exists(resolved_dataset_path):
             raise FileNotFoundError(
@@ -1299,7 +1367,7 @@ async def _run_privacy_validation_async(
                 metric_value=float(len(pii_flagged)),
                 threshold=0.0,
                 passed=len(pii_flagged) == 0,
-                details={"flagged_columns": [r.column for r in pii_flagged]}
+                details={"flagged_columns": [r.column_name for r in pii_flagged]}
             ))
             
         # 2. k-Anonymity
