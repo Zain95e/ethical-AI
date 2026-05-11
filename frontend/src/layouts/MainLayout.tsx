@@ -43,7 +43,7 @@ const DRAWER_WIDTH = 260;
 const menuItems = [
     { text: 'Dashboard', icon: DashboardIcon, path: '/dashboard' },
     { text: 'Projects', icon: FolderIcon, path: '/projects' },
-    { text: 'Validations', icon: AssessmentIcon, path: '/validations' },
+
     { text: 'Templates', icon: DescriptionIcon, path: '/templates' },
     { text: 'Audit Log', icon: HistoryIcon, path: '/audit' },
     { text: 'Knowledge Base', icon: KnowledgeIcon, path: '/knowledge-base' },
