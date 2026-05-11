@@ -11,6 +11,7 @@ export default function PrivacyVisualization({ piiDetected, kAnonymityGroups = [
     const gaugeData = [{ name: 'Risk', value: Math.max(0, Math.min(100, riskScore)) }];
     const riskLevel = riskScore >= 70 ? 'High' : riskScore >= 30 ? 'Medium' : 'Low';
     const riskColor = riskScore >= 70 ? 'error' : riskScore >= 30 ? 'warning' : 'success';
+    const colorHex = riskScore >= 70 ? '#ef4444' : riskScore >= 30 ? '#f59e0b' : '#22c55e';
 
     return (
         <Box sx={{ display: 'grid', gap: 2 }}>
@@ -54,14 +55,14 @@ export default function PrivacyVisualization({ piiDetected, kAnonymityGroups = [
                             </Typography>
                         </Box>
                     ) : (
-                        <Box sx={{ height: 280 }}>
+                        <Box sx={{ height: 320, pr: 2 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={kAnonymityGroups}>
+                                <BarChart data={kAnonymityGroups} margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="size" label={{ value: 'Group Size', position: 'insideBottom', offset: -5 }} />
-                                    <YAxis label={{ value: 'Number of Groups', angle: -90, position: 'insideLeft' }} />
+                                    <XAxis dataKey="size" label={{ value: 'Group Size (k)', position: 'bottom', offset: 0 }} />
+                                    <YAxis label={{ value: 'Number of Groups', angle: -90, position: 'insideLeft', offset: -5 }} />
                                     <Tooltip />
-                                    <Bar dataKey="count" fill="#3b82f6" />
+                                    <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </Box>
@@ -72,17 +73,19 @@ export default function PrivacyVisualization({ piiDetected, kAnonymityGroups = [
             <Card>
                 <CardContent>
                     <Typography variant="h6" sx={{ mb: 2 }}>Privacy Risk Score</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <Box sx={{ width: 220, height: 220 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, height: 200 }}>
+                        <Box sx={{ width: 220, height: 220, mt: -2 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <RadialBarChart innerRadius="70%" outerRadius="100%" data={gaugeData} startAngle={180} endAngle={0}>
-                                    <RadialBar background dataKey="value" fill="#f59e0b" />
+                                    <RadialBar background={{ fill: 'rgba(255,255,255,0.05)' }} dataKey="value" fill={colorHex} cornerRadius={10} />
                                 </RadialBarChart>
                             </ResponsiveContainer>
                         </Box>
-                        <Box>
-                            <Typography variant="h3" sx={{ fontWeight: 700 }}>{riskScore.toFixed(0)}%</Typography>
-                            <Chip color={riskColor as any} label={`${riskLevel} Risk`} />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography variant="h2" sx={{ fontWeight: 800, color: colorHex, lineHeight: 1 }}>
+                                {riskScore.toFixed(0)}<span style={{ fontSize: '1.5rem', color: '#94a3b8' }}>/100</span>
+                            </Typography>
+                            <Chip color={riskColor as any} label={`${riskLevel} Risk`} sx={{ fontWeight: 700, width: 'fit-content' }} />
                         </Box>
                     </Box>
                 </CardContent>

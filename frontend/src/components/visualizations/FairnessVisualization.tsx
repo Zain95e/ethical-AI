@@ -179,8 +179,8 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart data={radarData}>
                                 <PolarGrid gridType="polygon" />
-                                <PolarAngleAxis dataKey="metric" />
-                                <PolarRadiusAxis domain={[0, 1]} tick={{ fontSize: 12 }} />
+                                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => val.split('_').join(' ')} />
+                                <PolarRadiusAxis domain={[0, 1]} tick={{ fontSize: 10, fill: '#64748b' }} angle={30} />
                                 <Radar name="Actual" dataKey="actual" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.35} />
                                 <Radar name="Threshold" dataKey="threshold" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} />
                                 <Legend />

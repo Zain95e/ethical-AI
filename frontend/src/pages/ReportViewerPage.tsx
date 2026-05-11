@@ -58,7 +58,7 @@ export default function ReportViewerPage() {
             name: r.metric_name,
             value: Number(r.metric_value ?? 0),
             threshold: Number(r.threshold ?? 0),
-            by_group: r.details?.selection_rates || undefined,
+            by_group: r.details?.by_group || undefined,
         }));
     }, [data]);
 

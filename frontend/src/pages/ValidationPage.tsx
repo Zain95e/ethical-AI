@@ -47,6 +47,7 @@ import {
   CheckBoxOutlineBlank as CheckBoxBlankIcon,
   ArrowForward as NextIcon,
   Lock as LockIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -3401,6 +3402,14 @@ export default function ValidationPage() {
                 }}
               >
                 Export JSON
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<DownloadIcon />}
+                onClick={() => setShowCertificate(true)}
+              >
+                View Certificate
               </Button>
               <Button
                 variant="outlined"
