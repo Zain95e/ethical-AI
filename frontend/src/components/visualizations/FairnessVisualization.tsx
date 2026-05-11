@@ -99,8 +99,12 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="metric" angle={-20} textAnchor="end" height={70} />
                                 <YAxis />
-                                <Tooltip formatter={(value) => fmt2dp(value)} />
-                                <Legend verticalAlign="top" />
+                                <Tooltip 
+                                    formatter={(value) => fmt2dp(value)} 
+                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+                                    itemStyle={{ color: '#e2e8f0' }}
+                                />
+                                <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '20px' }} />
                                 <Bar dataKey="value" name="Actual Value" fill="#3b82f6" />
                                 <Bar dataKey="threshold" name="Threshold" fill="#f59e0b" />
                             </BarChart>
@@ -131,6 +135,8 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                                     <XAxis dataKey="group" />
                                     <YAxis domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
                                     <Tooltip
+                                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+                                        itemStyle={{ color: '#e2e8f0' }}
                                         formatter={(value) => {
                                             const n = toNumber(value);
                                             return [n == null ? 'N/A' : `${(n * 100).toFixed(2)}%`, 'Selection Rate'];
@@ -177,14 +183,18 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                     <Typography variant="h6" sx={{ mb: 2 }}>Fairness Radar</Typography>
                     <Box sx={{ height: 340 }}>
                         <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart data={radarData}>
-                                <PolarGrid gridType="polygon" />
-                                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(val) => val.split('_').join(' ')} />
-                                <PolarRadiusAxis domain={[0, 1]} tick={{ fontSize: 10, fill: '#64748b' }} angle={30} />
-                                <Radar name="Actual" dataKey="actual" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.35} />
-                                <Radar name="Threshold" dataKey="threshold" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.2} />
-                                <Legend />
-                                <Tooltip formatter={(value) => fmt2dp(value)} />
+                            <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                                <PolarGrid gridType="polygon" stroke="rgba(255,255,255,0.1)" />
+                                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: '#cbd5e1', fontWeight: 500 }} tickFormatter={(val) => val.split('_').join(' ')} />
+                                <PolarRadiusAxis domain={[0, 1]} tick={{ fontSize: 10, fill: '#64748b' }} angle={30} stroke="rgba(255,255,255,0.1)" />
+                                <Radar name="Actual" dataKey="actual" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.4} strokeWidth={2} />
+                                <Radar name="Threshold" dataKey="threshold" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.25} strokeWidth={2} />
+                                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                <Tooltip 
+                                    formatter={(value) => fmt2dp(value)} 
+                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+                                    itemStyle={{ color: '#e2e8f0' }}
+                                />
                             </RadarChart>
                         </ResponsiveContainer>
                     </Box>

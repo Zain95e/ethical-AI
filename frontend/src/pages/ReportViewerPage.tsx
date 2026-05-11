@@ -12,11 +12,20 @@ import {
     Tabs,
     Tab,
     Chip,
+    Menu,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DownloadIcon from '@mui/icons-material/Download';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import CodeIcon from '@mui/icons-material/Code';
+import WebIcon from '@mui/icons-material/Web';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import { reportsApi, traceabilityApi } from '../services/api';
+import CertificateModal from '../components/CertificateModal';
 import SHAPVisualization from '../components/visualizations/SHAPVisualization';
 import LIMEVisualization from '../components/visualizations/LIMEVisualization';
 import FairnessVisualization from '../components/visualizations/FairnessVisualization';
@@ -37,6 +46,15 @@ export default function ReportViewerPage() {
     const navigate = useNavigate();
     const { suiteId } = useParams<{ suiteId: string }>();
     const [tab, setTab] = useState(0);
+    const [showCertificate, setShowCertificate] = useState(false);
+    const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
+
+    const handleExportClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        setExportMenuAnchor(event.currentTarget);
+    };
+    const handleExportClose = () => {
+        setExportMenuAnchor(null);
+    };
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['validationReport', suiteId],
@@ -168,23 +186,40 @@ export default function ReportViewerPage() {
                         {data.project_name} • {data.model_name} • {data.dataset_name}
                     </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Chip icon={<AssessmentIcon />} label={String(data.overall_status || '').toUpperCase()} color={data.overall_passed ? 'success' : 'error'} />
-                    <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownloadBackendPdf}>Download PDF (API)</Button>
-                    <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownloadFrontendPdf}>Download PDF (UI)</Button>
-                    <Button variant="outlined" startIcon={<DownloadIcon />} onClick={async () => {
-                        try {
-                            const blob = await reportsApi.downloadCertificatePdf(suiteId!);
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `compliance_certificate_${suiteId}.pdf`;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                        } catch { /* silent */ }
-                    }}>Download Certificate</Button>
-                    <Button variant="outlined" onClick={handleExportJson}>Export JSON</Button>
-                    <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownloadHtml}>Download HTML</Button>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Chip icon={<AssessmentIcon />} label={String(data.overall_status || '').toUpperCase()} color={data.overall_passed ? 'success' : 'error'} sx={{ mr: 2 }} />
+                    <Button variant="contained" startIcon={<DownloadIcon />} onClick={handleExportClick}>
+                        Export Report
+                    </Button>
+                    <Menu
+                        anchorEl={exportMenuAnchor}
+                        open={Boolean(exportMenuAnchor)}
+                        onClose={handleExportClose}
+                        PaperProps={{
+                            sx: { mt: 1, border: '1px solid rgba(255,255,255,0.1)', bgcolor: 'background.paper', minWidth: 200 }
+                        }}
+                    >
+                        <MenuItem onClick={() => { handleDownloadFrontendPdf(); handleExportClose(); }}>
+                            <ListItemIcon><PictureAsPdfIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText>Download PDF (Full)</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { handleDownloadBackendPdf(); handleExportClose(); }}>
+                            <ListItemIcon><PictureAsPdfIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText>Download PDF (Summary)</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { setShowCertificate(true); handleExportClose(); }}>
+                            <ListItemIcon><WorkspacePremiumIcon fontSize="small" sx={{ color: '#f59e0b' }} /></ListItemIcon>
+                            <ListItemText>View Certificate</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { handleExportJson(); handleExportClose(); }}>
+                            <ListItemIcon><CodeIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText>Export JSON Data</ListItemText>
+                        </MenuItem>
+                        <MenuItem onClick={() => { handleDownloadHtml(); handleExportClose(); }}>
+                            <ListItemIcon><WebIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText>Export HTML</ListItemText>
+                        </MenuItem>
+                    </Menu>
                 </Box>
             </Box>
 
@@ -253,6 +288,19 @@ export default function ReportViewerPage() {
             <TabPanel value={tab} index={4}>
                 {suiteId && <RemediationPanel suiteId={suiteId} />}
             </TabPanel>
+
+            {/* Certificate Modal */}
+            {showCertificate && (
+                <CertificateModal
+                    open={showCertificate}
+                    onClose={() => setShowCertificate(false)}
+                    recipientName="Valued User"
+                    projectName={data.project_name}
+                    suiteId={suiteId!}
+                    validationsPassed={Object.keys(data?.validations || {})}
+                    overallPassed={data.overall_passed ?? false}
+                />
+            )}
         </Box>
     );
 }

@@ -66,67 +66,64 @@ function DecorativeBorder() {
       preserveAspectRatio="none"
     >
       <defs>
-        <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#c9a84c" />
-          <stop offset="50%" stopColor="#f0d080" />
-          <stop offset="100%" stopColor="#c9a84c" />
+        <linearGradient id="borderOuter" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0f172a" />
+          <stop offset="50%" stopColor="#1e293b" />
+          <stop offset="100%" stopColor="#0f172a" />
         </linearGradient>
-        <linearGradient id="cornerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f0d080" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#c9a84c" stopOpacity="0.6" />
+        <linearGradient id="borderInner" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#d4af37" />
+          <stop offset="50%" stopColor="#f3e5ab" />
+          <stop offset="100%" stopColor="#d4af37" />
         </linearGradient>
       </defs>
 
-      {/* Outer border */}
+      {/* Outer Navy Border */}
       <rect
-        x="8"
-        y="8"
-        width="calc(100% - 16px)"
-        height="calc(100% - 16px)"
-        rx="4"
+        x="16"
+        y="16"
+        width="calc(100% - 32px)"
+        height="calc(100% - 32px)"
         fill="none"
-        stroke="url(#borderGrad)"
-        strokeWidth="2.5"
+        stroke="url(#borderOuter)"
+        strokeWidth="12"
         vectorEffect="non-scaling-stroke"
       />
-      {/* Inner border */}
+      {/* Inner Gold Border */}
       <rect
-        x="18"
-        y="18"
-        width="calc(100% - 36px)"
-        height="calc(100% - 36px)"
-        rx="2"
+        x="24"
+        y="24"
+        width="calc(100% - 48px)"
+        height="calc(100% - 48px)"
         fill="none"
-        stroke="url(#borderGrad)"
+        stroke="url(#borderInner)"
+        strokeWidth="3"
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* Thin Inner Navy Border */}
+      <rect
+        x="30"
+        y="30"
+        width="calc(100% - 60px)"
+        height="calc(100% - 60px)"
+        fill="none"
+        stroke="url(#borderOuter)"
         strokeWidth="1"
-        strokeDasharray="6 4"
         vectorEffect="non-scaling-stroke"
       />
 
-      {/* Corner ornaments – top-left */}
-      <g fill="url(#cornerGrad)">
-        <circle cx="24" cy="24" r="3" />
-        <circle cx="36" cy="24" r="1.5" />
-        <circle cx="24" cy="36" r="1.5" />
-      </g>
-      {/* top-right */}
-      <g fill="url(#cornerGrad)">
-        <circle cx="calc(100% - 24px)" cy="24" r="3" />
-        <circle cx="calc(100% - 36px)" cy="24" r="1.5" />
-        <circle cx="calc(100% - 24px)" cy="36" r="1.5" />
-      </g>
-      {/* bottom-left */}
-      <g fill="url(#cornerGrad)">
-        <circle cx="24" cy="calc(100% - 24px)" r="3" />
-        <circle cx="36" cy="calc(100% - 24px)" r="1.5" />
-        <circle cx="24" cy="calc(100% - 36px)" r="1.5" />
-      </g>
-      {/* bottom-right */}
-      <g fill="url(#cornerGrad)">
-        <circle cx="calc(100% - 24px)" cy="calc(100% - 24px)" r="3" />
-        <circle cx="calc(100% - 36px)" cy="calc(100% - 24px)" r="1.5" />
-        <circle cx="calc(100% - 24px)" cy="calc(100% - 36px)" r="1.5" />
-      </g>
+      {/* Corner Ornaments */}
+      {[
+        { cx: 30, cy: 30 },
+        { cx: "calc(100% - 30px)", cy: 30 },
+        { cx: 30, cy: "calc(100% - 30px)" },
+        { cx: "calc(100% - 30px)", cy: "calc(100% - 30px)" },
+      ].map((pos, i) => (
+        <g key={i}>
+          <circle cx={pos.cx} cy={pos.cy} r="14" fill="#ffffff" stroke="url(#borderInner)" strokeWidth="2" />
+          <circle cx={pos.cx} cy={pos.cy} r="6" fill="url(#borderOuter)" />
+        </g>
+      ))}
     </svg>
   );
 }
@@ -147,310 +144,139 @@ function CertificateCanvas({
   return (
     <Box
       sx={{
-        // Fixed A4 landscape-ish ratio for crisp PDF rendering
-        width: 860,
-        minHeight: 600,
+        width: 900,
+        minHeight: 640,
         position: "relative",
-        background: "linear-gradient(145deg, #0a0f1e 0%, #0d1a2e 50%, #0a1520 100%)",
-        borderRadius: "8px",
+        backgroundColor: "#faf9f6", // Off-white parchment
+        backgroundImage: "radial-gradient(circle at 50% 50%, #ffffff 0%, #f4f0e6 100%)",
+        borderRadius: "4px",
         overflow: "hidden",
         fontFamily: "'Inter', sans-serif",
-        color: "#f8fafc",
+        color: "#0f172a",
         p: 0,
         flexShrink: 0,
+        boxShadow: "inset 0 0 100px rgba(0,0,0,0.02)",
       }}
     >
-      {/* Decorative Background Geometry */}
+      {/* Subtle watermark logo in background */}
       <Box
         sx={{
           position: "absolute",
-          top: -80,
-          right: -80,
-          width: 320,
-          height: 320,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          opacity: 0.03,
           pointerEvents: "none",
         }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: -60,
-          left: -60,
-          width: 280,
-          height: 280,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(201,168,76,0.10) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-      {/* Subtle grid pattern */}
-      <Box
-        sx={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage:
-            "linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-          pointerEvents: "none",
-        }}
-      />
+      >
+        <VerifiedIcon sx={{ fontSize: 400, color: "#0f172a" }} />
+      </Box>
 
-      {/* Gold SVG Border */}
+      {/* Borders */}
       <DecorativeBorder />
 
       {/* ─── Content ─────────────────────────────────────────────────────── */}
-      <Box sx={{ position: "relative", px: 7, py: 5 }}>
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 2,
-          }}
-        >
-          {/* Logo / Org */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: "10px",
-                background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 0 16px rgba(59,130,246,0.4)",
-              }}
-            >
-              <VerifiedIcon sx={{ color: "#fff", fontSize: 24 }} />
-            </Box>
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  color: "#3b82f6",
-                  lineHeight: 1.1,
-                  textTransform: "uppercase",
-                }}
-              >
-                Ethical AI Platform
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.68rem",
-                  color: "#94a3b8",
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Responsible AI Certification Authority
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Trophy / seal */}
-          <Box
+      <Box sx={{ position: "relative", px: 10, py: 7, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        
+        {/* Header Ribbon */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+          <Box sx={{ width: 60, height: 2, background: "linear-gradient(90deg, transparent, #d4af37)" }} />
+          <Typography
             sx={{
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
-              background: overallPassed
-                ? "linear-gradient(135deg, #b8860b 0%, #f0d060 50%, #b8860b 100%)"
-                : "linear-gradient(135deg, #4b5563 0%, #6b7280 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: overallPassed
-                ? "0 0 24px rgba(201,168,76,0.5), 0 0 48px rgba(201,168,76,0.2)"
-                : "none",
-              border: "2px solid",
-              borderColor: overallPassed ? "#f0d060" : "#4b5563",
+              fontFamily: "'Georgia', serif",
+              fontSize: "1.2rem",
+              fontWeight: 600,
+              letterSpacing: "0.2em",
+              color: "#d4af37",
+              textTransform: "uppercase",
             }}
           >
-            <TrophyIcon
-              sx={{
-                fontSize: 32,
-                color: overallPassed ? "#0a0f1e" : "#9ca3af",
-              }}
-            />
-          </Box>
+            Ethical AI Certification
+          </Typography>
+          <Box sx={{ width: 60, height: 2, background: "linear-gradient(-90deg, transparent, #d4af37)" }} />
         </Box>
-
-        {/* Gold divider */}
-        <Box
-          sx={{
-            width: "100%",
-            height: "1px",
-            background:
-              "linear-gradient(90deg, transparent, #c9a84c 20%, #f0d080 50%, #c9a84c 80%, transparent)",
-            mb: 3.5,
-          }}
-        />
-
-        {/* Certificate Label */}
-        <Typography
-          sx={{
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            letterSpacing: "0.25em",
-            textTransform: "uppercase",
-            color: "#c9a84c",
-            textAlign: "center",
-            mb: 1.5,
-          }}
-        >
-          Certificate of{" "}
-          {overallPassed ? "Ethical AI Compliance" : "Validation Assessment"}
-        </Typography>
 
         {/* Main Title */}
         <Typography
           sx={{
-            fontSize: "2.4rem",
+            fontFamily: "'Georgia', serif",
+            fontSize: "3.2rem",
             fontWeight: 800,
-            letterSpacing: "-0.02em",
-            textAlign: "center",
-            lineHeight: 1.1,
-            background: "linear-gradient(135deg, #e2e8f0 0%, #ffffff 50%, #cbd5e1 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            mb: 0.5,
+            color: "#0f172a",
+            mb: 1,
+            textShadow: "1px 1px 0px #fff, 2px 2px 4px rgba(0,0,0,0.05)",
           }}
         >
-          {overallPassed ? "AI Ethics Compliance" : "Validation Assessment"}
+          {overallPassed ? "Certificate of Compliance" : "Validation Record"}
         </Typography>
+
         <Typography
           sx={{
             fontSize: "1.1rem",
-            fontWeight: 300,
-            textAlign: "center",
-            color: "#94a3b8",
-            letterSpacing: "0.04em",
-            mb: 3,
-          }}
-        >
-          {overallPassed
-            ? "This document certifies successful validation"
-            : "This document records the validation assessment"}
-        </Typography>
-
-        {/* This certifies that */}
-        <Typography
-          sx={{
-            textAlign: "center",
-            fontSize: "0.8rem",
-            color: "#94a3b8",
+            fontWeight: 400,
+            color: "#64748b",
             fontStyle: "italic",
-            mb: 0.75,
+            mb: 4,
           }}
         >
-          This is to certify that
+          This official document acknowledges that
         </Typography>
 
-        {/* Recipient Name */}
-        <Box sx={{ textAlign: "center", mb: 2.5, position: "relative" }}>
-          <Box
+        {/* Recipient / Model Name */}
+        <Box sx={{ mb: 4, position: "relative", width: "100%", maxWidth: 600 }}>
+          <Typography
             sx={{
-              display: "inline-block",
-              borderBottom: "2px solid",
-              borderColor: "rgba(201,168,76,0.6)",
-              pb: 0.5,
-              px: 2,
+              fontFamily: "'Georgia', serif",
+              fontSize: "2.8rem",
+              fontWeight: 700,
+              color: "#1e293b",
+              lineHeight: 1.2,
+              px: 4,
+              pb: 1,
+              borderBottom: "2px solid #d4af37",
             }}
           >
-            <Typography
-              sx={{
-                fontSize: "2rem",
-                fontWeight: 700,
-                letterSpacing: "0.02em",
-                background:
-                  "linear-gradient(135deg, #f0d080 0%, #c9a84c 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                fontStyle: "italic",
-              }}
-            >
-              {recipientName}
-            </Typography>
-          </Box>
+            {recipientName}
+          </Typography>
         </Box>
 
-        {/* Description */}
+        {/* Description Text */}
         <Typography
           sx={{
-            textAlign: "center",
-            fontSize: "0.875rem",
-            color: "#cbd5e1",
-            maxWidth: 580,
-            mx: "auto",
-            lineHeight: 1.7,
-            mb: 3,
+            fontSize: "1.05rem",
+            color: "#334155",
+            maxWidth: 680,
+            lineHeight: 1.8,
+            mb: 4,
           }}
         >
           {overallPassed
-            ? `has successfully validated the AI system against all selected ethical guidelines,
-              demonstrating compliance with responsible AI principles through rigorous automated testing.`
-            : `has completed an AI system validation assessment. The results of all selected
-              ethical checks are recorded in this official audit document.`}
+            ? `Has successfully undergone rigorous automated auditing and satisfied all critical thresholds for Fairness, Privacy, Transparency, and Accountability. The AI system named `
+            : `Has completed a standardized algorithmic audit. The results of the evaluated ethical constraints for the AI system named `}
+          <strong style={{ color: "#0f172a" }}>{projectName || "the specified project"}</strong>
+          {overallPassed ? ` are officially certified by this platform.` : ` have been securely recorded.`}
         </Typography>
 
-        {/* Validation Results Grid */}
+        {/* Validation Badges */}
         {passed.length > 0 && (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              flexWrap: "wrap",
-              gap: 1.5,
-              mb: 3.5,
-            }}
-          >
+          <Box sx={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2, mb: 6 }}>
             {passed.map((v) => (
               <Box
                 key={v}
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 0.75,
-                  px: 2,
-                  py: 0.75,
-                  border: "1px solid",
-                  borderColor: "rgba(201,168,76,0.35)",
-                  borderRadius: "20px",
-                  background: "rgba(201,168,76,0.07)",
-                  backdropFilter: "blur(4px)",
+                  gap: 1,
+                  px: 2.5,
+                  py: 1,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "30px",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.02)",
                 }}
               >
-                <Box
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: overallPassed ? "#22c55e" : "#f59e0b",
-                    boxShadow: overallPassed
-                      ? "0 0 6px #22c55e"
-                      : "0 0 6px #f59e0b",
-                    flexShrink: 0,
-                  }}
-                />
-                <Typography
-                  sx={{
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: "#e2e8f0",
-                    letterSpacing: "0.04em",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <VerifiedIcon sx={{ color: overallPassed ? "#10b981" : "#f59e0b", fontSize: 18 }} />
+                <Typography sx={{ fontSize: "0.8rem", fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   {labelForValidator(v)}
                 </Typography>
               </Box>
@@ -458,179 +284,74 @@ function CertificateCanvas({
           </Box>
         )}
 
-        {/* Gold divider */}
-        <Box
-          sx={{
-            width: "100%",
-            height: "1px",
-            background:
-              "linear-gradient(90deg, transparent, #c9a84c 20%, #f0d080 50%, #c9a84c 80%, transparent)",
-            mb: 3,
-          }}
-        />
+        {/* Footer Grid */}
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-end", mt: "auto", px: 4 }}>
+          
+          {/* Left: Date & ID */}
+          <Box sx={{ textAlign: "left" }}>
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", mb: 0.5 }}>
+              Date of Issuance
+            </Typography>
+            <Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#0f172a", mb: 2 }}>
+              {date}
+            </Typography>
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", mb: 0.5 }}>
+              Certificate ID
+            </Typography>
+            <Typography sx={{ fontSize: "0.9rem", fontWeight: 600, color: "#0f172a", fontFamily: "monospace" }}>
+              {certId}
+            </Typography>
+          </Box>
 
-        {/* Footer: Project | Date | Cert ID | Signatures */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-          }}
-        >
-          {/* Left: metadata */}
-          <Box>
-            {projectName && (
-              <Box sx={{ mb: 0.75 }}>
-                <Typography
-                  sx={{
-                    fontSize: "0.65rem",
-                    letterSpacing: "0.12em",
-                    color: "#64748b",
-                    textTransform: "uppercase",
-                    mb: 0.2,
-                  }}
-                >
-                  Project
-                </Typography>
-                <Typography
-                  sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#e2e8f0" }}
-                >
-                  {projectName}
-                </Typography>
-              </Box>
-            )}
-            <Box sx={{ mb: 0.75 }}>
-              <Typography
-                sx={{
-                  fontSize: "0.65rem",
-                  letterSpacing: "0.12em",
-                  color: "#64748b",
-                  textTransform: "uppercase",
-                  mb: 0.2,
-                }}
-              >
-                Date of Issuance
-              </Typography>
-              <Typography
-                sx={{ fontSize: "0.85rem", fontWeight: 600, color: "#e2e8f0" }}
-              >
-                {date}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography
-                sx={{
-                  fontSize: "0.65rem",
-                  letterSpacing: "0.12em",
-                  color: "#64748b",
-                  textTransform: "uppercase",
-                  mb: 0.2,
-                }}
-              >
-                Certificate ID
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  color: "#3b82f6",
-                  fontFamily: "monospace",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                {certId}
+          {/* Center: Gold Seal */}
+          <Box
+            sx={{
+              position: "relative",
+              width: 110,
+              height: 110,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 15px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.5)",
+              border: "2px dashed rgba(255,255,255,0.6)",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                inset: 6,
+                borderRadius: "50%",
+                border: "1px solid rgba(0,0,0,0.1)",
+              }
+            }}
+          >
+            <Box sx={{ textAlign: "center", zIndex: 1 }}>
+              <TrophyIcon sx={{ fontSize: 36, color: "#8a611c", mb: 0.5 }} />
+              <Typography sx={{ fontSize: "0.55rem", fontWeight: 800, color: "#8a611c", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                {overallPassed ? "Certified" : "Audited"}
               </Typography>
             </Box>
           </Box>
 
-          {/* Center: Status Badge */}
+          {/* Right: Signature */}
           <Box sx={{ textAlign: "center" }}>
-            <Box
+            <Typography
               sx={{
-                display: "inline-flex",
-                flexDirection: "column",
-                alignItems: "center",
-                px: 3,
-                py: 1.5,
-                border: "2px solid",
-                borderColor: overallPassed
-                  ? "rgba(34,197,94,0.5)"
-                  : "rgba(239,68,68,0.5)",
-                borderRadius: "8px",
-                background: overallPassed
-                  ? "rgba(34,197,94,0.08)"
-                  : "rgba(239,68,68,0.08)",
+                fontFamily: "'Allura', 'Great Vibes', cursive, 'Georgia', serif",
+                fontSize: "2.4rem",
+                color: "#1e293b",
+                lineHeight: 0.8,
+                mb: 1,
               }}
             >
-              <Typography
-                sx={{
-                  fontSize: "0.65rem",
-                  letterSpacing: "0.16em",
-                  color: "#64748b",
-                  textTransform: "uppercase",
-                  mb: 0.25,
-                }}
-              >
-                Verification Status
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "1.1rem",
-                  fontWeight: 800,
-                  letterSpacing: "0.1em",
-                  color: overallPassed ? "#22c55e" : "#ef4444",
-                  textTransform: "uppercase",
-                }}
-              >
-                {overallPassed ? "✓ Certified" : "✗ Not Certified"}
-              </Typography>
-            </Box>
+              Ethical AI
+            </Typography>
+            <Box sx={{ width: 180, height: 1, backgroundColor: "#cbd5e1", mb: 1 }} />
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              Authorized Authority
+            </Typography>
           </Box>
 
-          {/* Right: Signature area */}
-          <Box sx={{ textAlign: "right" }}>
-            <Box
-              sx={{
-                borderBottom: "1px solid rgba(148,163,184,0.3)",
-                mb: 0.5,
-                pb: 1,
-                minWidth: 140,
-              }}
-            >
-              {/* Stylised "signature" */}
-              <Typography
-                sx={{
-                  fontFamily: "'Georgia', serif",
-                  fontSize: "1.4rem",
-                  fontStyle: "italic",
-                  color: "#c9a84c",
-                  lineHeight: 1,
-                  letterSpacing: "0.02em",
-                }}
-              >
-                Ethical AI Platform
-              </Typography>
-            </Box>
-            <Typography
-              sx={{
-                fontSize: "0.65rem",
-                letterSpacing: "0.12em",
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Authorised Signatory
-            </Typography>
-            <Typography
-              sx={{
-                fontSize: "0.7rem",
-                color: "#94a3b8",
-                mt: 0.25,
-              }}
-            >
-              Responsible AI Division
-            </Typography>
-          </Box>
         </Box>
       </Box>
     </Box>
