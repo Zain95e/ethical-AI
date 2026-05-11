@@ -24,7 +24,6 @@ import {
 import {
     Dashboard as DashboardIcon,
     Folder as FolderIcon,
-    Assessment as AssessmentIcon,
     Description as DescriptionIcon,
     History as HistoryIcon,
     Settings as SettingsIcon,
