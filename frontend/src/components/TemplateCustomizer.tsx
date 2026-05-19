@@ -22,11 +22,13 @@ import {
     Chip,
     CircularProgress,
     Alert,
+    InputAdornment,
 } from '@mui/material';
 import {
     Add as AddIcon,
     Delete as DeleteIcon,
     RestartAlt as ResetIcon,
+    Clear as ClearIcon,
 } from '@mui/icons-material';
 import type { Template, TemplateRuleItem, Project } from '../types';
 
@@ -321,7 +323,25 @@ export default function TemplateCustomizer({
                         value={selectedProjectId}
                         label="Apply to Project"
                         onChange={(e) => setSelectedProjectId(e.target.value)}
+                        endAdornment={
+                            selectedProjectId ? (
+                                <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedProjectId('');
+                                        }}
+                                    >
+                                        <ClearIcon fontSize="small" />
+                                    </IconButton>
+                                </InputAdornment>
+                            ) : null
+                        }
                     >
+                        <MenuItem value="">
+                            <em>None</em>
+                        </MenuItem>
                         {projects.map((p) => (
                             <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
                         ))}

@@ -31,7 +31,11 @@ export default function LIMEVisualization({ prediction, contributions }: LIMEVis
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis type="number" tick={{ fontSize: 11 }} />
                                 <YAxis dataKey="feature" type="category" width={120} tick={{ fontSize: 11 }} />
-                                <Tooltip />
+                                <Tooltip 
+                                    formatter={(value: any) => (typeof value === 'number' ? value.toFixed(4) : value)}
+                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+                                    itemStyle={{ color: '#e2e8f0' }}
+                                />
                                 <Bar dataKey="weight" radius={[0, 3, 3, 0]}>
                                     {top.map((entry, idx) => (
                                         <Cell key={idx} fill={entry.weight >= 0 ? '#22c55e' : '#ef4444'} />

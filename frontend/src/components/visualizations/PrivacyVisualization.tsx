@@ -61,7 +61,10 @@ export default function PrivacyVisualization({ piiDetected, kAnonymityGroups = [
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="size" label={{ value: 'Group Size (k)', position: 'bottom', offset: 0 }} />
                                     <YAxis label={{ value: 'Number of Groups', angle: -90, position: 'insideLeft', offset: -5 }} />
-                                    <Tooltip />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+                                        itemStyle={{ color: '#e2e8f0' }}
+                                    />
                                     <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>

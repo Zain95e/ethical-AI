@@ -322,6 +322,22 @@ async def run_fairness_validation(
         validation.progress = 100
         validation.completed_at = datetime.now(timezone.utc)
         await db.commit()
+
+        # Send fairness notification
+        try:
+            from app.models.notification import Notification
+            notification = Notification(
+                user_id=current_user.id,
+                project_id=model_record.project_id,
+                message=f"Fairness validation completed for model '{model_record.name}'. Passed: {report.overall_passed}.",
+                severity="success" if report.overall_passed else "warning",
+                read=False,
+                link=f"/projects"
+            )
+            db.add(notification)
+            await db.commit()
+        except Exception as n_err:
+            logger.error("Failed to create fairness validation notification: %s", n_err)
         
         # Create audit log
         audit = AuditLog(
@@ -373,6 +389,22 @@ async def run_fairness_validation(
             await db.commit()
         except Exception as db_err:
             logger.error("Failed to persist fairness error state: %s", db_err)
+
+        # Send failure notification
+        try:
+            from app.models.notification import Notification
+            notification = Notification(
+                user_id=current_user.id,
+                project_id=model_record.project_id,
+                message=f"Fairness validation failed for model '{model_record.name}': {str(e)[:150]}.",
+                severity="error",
+                read=False,
+                link=f"/projects"
+            )
+            db.add(notification)
+            await db.commit()
+        except Exception as n_err:
+            logger.error("Failed to create fairness failure notification: %s", n_err)
         
         logger.error("Fairness validation failed: id=%s error=%s", validation.id, e)
         raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)[:500]}")
@@ -654,6 +686,22 @@ async def run_transparency_validation(
         validation.progress = 100
         validation.completed_at = datetime.now(timezone.utc)
         await db.commit()
+
+        # Send transparency notification
+        try:
+            from app.models.notification import Notification
+            notification = Notification(
+                user_id=current_user.id,
+                project_id=model_record.project_id,
+                message=f"Transparency validation completed for model '{model_record.name}'.",
+                severity="success",
+                read=False,
+                link=f"/projects"
+            )
+            db.add(notification)
+            await db.commit()
+        except Exception as n_err:
+            logger.error("Failed to create transparency notification: %s", n_err)
         
         # Audit log
         audit = AuditLog(
@@ -693,6 +741,22 @@ async def run_transparency_validation(
             await db.commit()
         except Exception as db_err:
             logger.error("Failed to persist transparency error state: %s", db_err)
+
+        # Send failure notification
+        try:
+            from app.models.notification import Notification
+            notification = Notification(
+                user_id=current_user.id,
+                project_id=model_record.project_id,
+                message=f"Transparency validation failed for model '{model_record.name}': {str(e)[:150]}.",
+                severity="error",
+                read=False,
+                link=f"/projects"
+            )
+            db.add(notification)
+            await db.commit()
+        except Exception as n_err:
+            logger.error("Failed to create transparency failure notification: %s", n_err)
         
         raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)[:500]}")
 
@@ -834,6 +898,22 @@ async def run_privacy_validation(
         validation.progress = 100
         validation.completed_at = datetime.now(timezone.utc)
         await db.commit()
+
+        # Send privacy notification
+        try:
+            from app.models.notification import Notification
+            notification = Notification(
+                user_id=current_user.id,
+                project_id=dataset_record.project_id,
+                message=f"Privacy validation completed for dataset '{dataset_record.name}'. Passed: {report.overall_passed}.",
+                severity="success" if report.overall_passed else "warning",
+                read=False,
+                link=f"/projects"
+            )
+            db.add(notification)
+            await db.commit()
+        except Exception as n_err:
+            logger.error("Failed to create privacy notification: %s", n_err)
         
         # Audit log
         audit = AuditLog(
@@ -875,6 +955,22 @@ async def run_privacy_validation(
             await db.commit()
         except Exception as db_err:
             logger.error("Failed to persist privacy error state: %s", db_err)
+
+        # Send failure notification
+        try:
+            from app.models.notification import Notification
+            notification = Notification(
+                user_id=current_user.id,
+                project_id=dataset_record.project_id,
+                message=f"Privacy validation failed for dataset '{dataset_record.name}': {str(e)[:150]}.",
+                severity="error",
+                read=False,
+                link=f"/projects"
+            )
+            db.add(notification)
+            await db.commit()
+        except Exception as n_err:
+            logger.error("Failed to create privacy failure notification: %s", n_err)
         
         raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)[:500]}")
 

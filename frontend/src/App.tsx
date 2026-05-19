@@ -25,6 +25,7 @@ import TraceabilityPage from './pages/TraceabilityPage';
 import ReportViewerPage from './pages/ReportViewerPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import ProfilePage from './pages/ProfilePage';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -91,38 +92,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Placeholder pages for routes not yet implemented
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: 'calc(100vh - 64px)',
-        p: 4,
-      }}
-    >
-      <Box
-        sx={{
-          fontSize: '4rem',
-          mb: 2,
-          opacity: 0.5,
-        }}
-      >
-        🚧
-      </Box>
-      <Box sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 1 }}>
-        {title}
-      </Box>
-      <Box sx={{ color: 'text.secondary' }}>
-        This page is coming soon
-      </Box>
-    </Box>
-  );
-}
-
 function AppRoutes() {
   return (
     <Routes>
@@ -160,8 +129,7 @@ function AppRoutes() {
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="admin" element={<AdminDashboardPage />} />
         <Route path="knowledge-base" element={<KnowledgeBasePage />} />
-        <Route path="profile" element={<PlaceholderPage title="Profile" />} />
-        <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+        <Route path="profile" element={<ProfilePage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

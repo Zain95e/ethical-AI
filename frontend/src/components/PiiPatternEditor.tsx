@@ -87,7 +87,7 @@ export default function PiiPatternEditor({
             value={row.pattern}
             onChange={(e) => updateRow(row.id, { pattern: e.target.value })}
             disabled={disabled}
-            placeholder="\\bEMP-\\d{6}\\b"
+            placeholder="\bEMP-\d{6}\b"
             helperText={row.pattern ? testResult(row.pattern, row.testValue) : ""}
           />
           <TextField

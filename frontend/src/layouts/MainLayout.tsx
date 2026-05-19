@@ -26,7 +26,6 @@ import {
     Folder as FolderIcon,
     Description as DescriptionIcon,
     History as HistoryIcon,
-    Settings as SettingsIcon,
     Menu as MenuIcon,
     Security as SecurityIcon,
     Logout as LogoutIcon,
@@ -54,7 +53,7 @@ export default function MainLayout() {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, logout } = useAuth();
+    const { user, profilePic, logout } = useAuth();
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -214,13 +213,14 @@ export default function MainLayout() {
                         sx={{ p: 0 }}
                     >
                         <Avatar
+                            src={profilePic || undefined}
                             sx={{
                                 width: 36,
                                 height: 36,
                                 bgcolor: 'primary.main',
                             }}
                         >
-                            {user?.name?.charAt(0) || 'U'}
+                            {!profilePic && (user?.name?.charAt(0) || 'U')}
                         </Avatar>
                     </IconButton>
 
@@ -240,12 +240,6 @@ export default function MainLayout() {
                                 <PersonIcon fontSize="small" />
                             </ListItemIcon>
                             Profile
-                        </MenuItem>
-                        <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/settings'); }}>
-                            <ListItemIcon>
-                                <SettingsIcon fontSize="small" />
-                            </ListItemIcon>
-                            Settings
                         </MenuItem>
                         <Divider />
                         <MenuItem onClick={handleLogout}>

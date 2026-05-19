@@ -33,8 +33,8 @@ class BenchmarkDatasetSeeder:
     backend/dataset-models/datasets/.
     """
 
-    # Absolute path to the locally trained datasets
-    _BASE = Path(__file__).resolve().parent.parent.parent / "dataset-models" / "datasets"
+    # Absolute path to the locally trained datasets (processed versions)
+    _BASE = Path(__file__).resolve().parent.parent.parent / "dataset-models" / "datasets" / "processed"
 
     # Dataset metadata configuration – 6 locally trained datasets
     BENCHMARK_DATASETS: Dict[str, Dict] = {
@@ -46,7 +46,7 @@ class BenchmarkDatasetSeeder:
                 "Trained with Logistic Regression (StandardScaler pipeline). "
                 "Accuracy: 82.3 %  |  Sensitive attribute: sex"
             ),
-            "filename": "adult_income.csv",
+            "filename": "adult_income_processed.csv",
             "target_column": "income_binary",
             "sensitive_attributes": ["sex"],
             "key_features": ["age", "education_num", "hours_per_week", "capital_gain", "capital_loss", "sex_encoded", "fnlwgt"],
@@ -64,7 +64,7 @@ class BenchmarkDatasetSeeder:
                 "Trained with Random Forest (150 trees, max_depth=8). "
                 "Accuracy: 81.9 %  |  Sensitive attribute: SEX_label"
             ),
-            "filename": "credit_default.csv",
+            "filename": "credit_default_processed.csv",
             "target_column": "default",
             "sensitive_attributes": ["SEX_label"],
             "key_features": ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", "BILL_AMT1", "PAY_AMT1"],
@@ -82,7 +82,7 @@ class BenchmarkDatasetSeeder:
                 "Trained with Gradient Boosting (200 estimators, lr=0.05). "
                 "Accuracy: 68.8 %  |  Sensitive attribute: race"
             ),
-            "filename": "compas_recidivism.csv",
+            "filename": "compas_recidivism_processed.csv",
             "target_column": "two_year_recid",
             "sensitive_attributes": ["race"],
             "key_features": ["age", "sex_enc", "juv_fel_count", "juv_misd_count", "juv_other_count", "priors_count", "charge_enc"],
@@ -100,7 +100,7 @@ class BenchmarkDatasetSeeder:
                 "Trained with SVM (RBF kernel, StandardScaler pipeline). "
                 "Accuracy: 86.7 %  |  Sensitive attribute: sex_label"
             ),
-            "filename": "heart_disease.csv",
+            "filename": "heart_disease_processed.csv",
             "target_column": "target",
             "sensitive_attributes": ["sex_label"],
             "key_features": ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalch", "exang", "oldpeak", "slope", "ca", "thal"],
@@ -118,7 +118,7 @@ class BenchmarkDatasetSeeder:
                 "Trained with MLP Neural Network (128→64→32 ReLU, StandardScaler pipeline). "
                 "Accuracy: 86.7 %  |  Sensitive attribute: Gender"
             ),
-            "filename": "ibm_hr_attrition.csv",
+            "filename": "ibm_hr_attrition_processed.csv",
             "target_column": "Attrition_binary",
             "sensitive_attributes": ["Gender"],
             "key_features": ["Age", "DailyRate", "DistanceFromHome", "Education", "EnvironmentSatisfaction", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome", "NumCompaniesWorked", "OverTime_enc", "PerformanceRating", "RelationshipSatisfaction", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion"],
@@ -136,7 +136,7 @@ class BenchmarkDatasetSeeder:
                 "Trained with Decision Tree (max_depth=6, balanced class weights). "
                 "Accuracy: 82.3 %  |  Sensitive attribute: sex"
             ),
-            "filename": "student_performance.csv",
+            "filename": "student_performance_processed.csv",
             "target_column": "pass_fail",
             "sensitive_attributes": ["sex"],
             "key_features": ["age", "sex_enc", "address_enc", "Medu", "Fedu", "traveltime", "studytime", "failures", "famsup_enc", "paid_enc", "internet_enc", "romantic_enc", "higher_enc", "freetime", "goout", "Dalc", "Walc", "health", "absences", "G1", "G2"],

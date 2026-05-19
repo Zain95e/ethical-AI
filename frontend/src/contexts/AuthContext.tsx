@@ -6,18 +6,42 @@ import { authApi } from '../services/api';
 
 interface AuthContextType {
     user: User | null;
+    profilePic: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, name: string) => Promise<void>;
     logout: () => void;
+    updateProfilePic: (base64: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
+    const [profilePic, setProfilePic] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    // load profile pic from localStorage on mount and when user changes
+    useEffect(() => {
+        if (user) {
+            const savedPic = localStorage.getItem(`profile_pic_${user.email}`);
+            setProfilePic(savedPic);
+        } else {
+            setProfilePic(null);
+        }
+    }, [user]);
+
+    const updateProfilePic = (base64: string | null) => {
+        if (user) {
+            if (base64) {
+                localStorage.setItem(`profile_pic_${user.email}`, base64);
+            } else {
+                localStorage.removeItem(`profile_pic_${user.email}`);
+            }
+            setProfilePic(base64);
+        }
+    };
 
     // Check for existing session on mount
     useEffect(() => {
@@ -60,11 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <AuthContext.Provider
             value={{
                 user,
+                profilePic,
                 isAuthenticated: !!user,
                 isLoading,
                 login,
                 register,
                 logout,
+                updateProfilePic,
             }}
         >
             {children}

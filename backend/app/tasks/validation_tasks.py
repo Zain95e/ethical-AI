@@ -1609,8 +1609,11 @@ def run_all_validations_task(
         suite = None
         async with async_session_maker() as db:
             try:
+                from sqlalchemy.orm import selectinload
                 result = await db.execute(
-                    select(ValidationSuite).where(ValidationSuite.id == UUID(suite_id))
+                    select(ValidationSuite)
+                    .options(selectinload(ValidationSuite.dataset))
+                    .where(ValidationSuite.id == UUID(suite_id))
                 )
                 suite = result.scalar_one()
 
@@ -1795,6 +1798,24 @@ def run_all_validations_task(
                 suite.completed_at = datetime.now(timezone.utc)
                 await db.commit()
 
+                # Send success notification
+                if user_id:
+                    try:
+                        from app.models.notification import Notification
+                        notification = Notification(
+                            user_id=UUID(user_id),
+                            project_id=suite.dataset.project_id if suite.dataset else None,
+                            validation_suite_id=suite.id,
+                            message=f"Validation suite completed. Overall status: {'PASSED' if overall_passed else 'FAILED'}.",
+                            severity="success" if overall_passed else "warning",
+                            read=False,
+                            link=f"/reports/validation/{suite.id}"
+                        )
+                        db.add(notification)
+                        await db.commit()
+                    except Exception as n_err:
+                        logger.error(f"Failed to create success notification: {n_err}")
+
                 results["overall_passed"] = overall_passed
                 results["status"] = "completed"
 
@@ -1812,6 +1833,24 @@ def run_all_validations_task(
                         await db.commit()
                     except Exception as db_err:
                         logger.error(f"Failed to persist suite error state: {db_err}")
+
+                    # Send failure notification
+                    if user_id:
+                        try:
+                            from app.models.notification import Notification
+                            notification = Notification(
+                                user_id=UUID(user_id),
+                                project_id=suite.dataset.project_id if suite.dataset else None,
+                                validation_suite_id=suite.id,
+                                message=f"Validation suite failed: {_safe_error_message(e)[:150]}...",
+                                severity="error",
+                                read=False,
+                                link=f"/projects"
+                            )
+                            db.add(notification)
+                            await db.commit()
+                        except Exception as n_err:
+                            logger.error(f"Failed to create failure notification: {n_err}")
                 raise
 
     return _run_async_in_task_loop(_run())

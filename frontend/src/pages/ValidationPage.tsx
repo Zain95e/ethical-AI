@@ -12,6 +12,7 @@ import {
   Select,
   MenuItem,
   Alert,
+  InputAdornment,
   CircularProgress,
   Chip,
   IconButton,
@@ -48,6 +49,7 @@ import {
   ArrowForward as NextIcon,
   Lock as LockIcon,
   Download as DownloadIcon,
+  Clear as ClearIcon,
 } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -322,6 +324,10 @@ export default function ValidationPage() {
   const [savePresetDialogOpen, setSavePresetDialogOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
   const [presetActionError, setPresetActionError] = useState("");
+
+  const [templateConfirmOpen, setTemplateConfirmOpen] = useState(false);
+  const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null);
+  const [templateOverwriteConfig, setTemplateOverwriteConfig] = useState(true);
 
   // Load existing suite when navigated via ?suite=
   useEffect(() => {
@@ -1240,6 +1246,45 @@ export default function ValidationPage() {
         </DialogActions>
       </Dialog>
 
+      <Dialog open={templateConfirmOpen} onClose={() => setTemplateConfirmOpen(false)}>
+        <DialogTitle>Apply Template Preset</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            You selected the template "{pendingTemplate?.name}". 
+            This template defines specific thresholds for fairness and privacy.
+          </DialogContentText>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Checkbox 
+                  checked={templateOverwriteConfig} 
+                  onChange={(e) => setTemplateOverwriteConfig(e.target.checked)} 
+                />
+              }
+              label="Use template values (overwrites manual configuration)"
+            />
+          </FormGroup>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTemplateConfirmOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={() => {
+              if (pendingTemplate) {
+                setSelectedTemplateId(pendingTemplate.id);
+                if (templateOverwriteConfig) {
+                  applyTemplatePreset(pendingTemplate);
+                }
+              }
+              setTemplateConfirmOpen(false);
+            }} 
+            variant="contained" 
+            color="primary"
+          >
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog
         open={savePresetDialogOpen}
         onClose={() => {
@@ -1381,7 +1426,7 @@ export default function ValidationPage() {
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
                   Load Saved Preset
                 </Typography>
-                <FormControl fullWidth>
+                 <FormControl fullWidth>
                   <InputLabel>Load Preset</InputLabel>
                   <Select
                     value={selectedPresetId}
@@ -1396,6 +1441,21 @@ export default function ValidationPage() {
                         applyValidationPreset(preset);
                       }
                     }}
+                    endAdornment={
+                      selectedPresetId ? (
+                        <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPresetId("");
+                            }}
+                          >
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null
+                    }
                   >
                     <MenuItem value="">
                       <em>No saved preset</em>
@@ -1418,15 +1478,34 @@ export default function ValidationPage() {
                     label="Select Template"
                     onChange={(e) => {
                       const templateId = e.target.value;
-                      setSelectedTemplateId(templateId);
-                      if (!templateId) return;
+                      if (!templateId) {
+                        setSelectedTemplateId("");
+                        return;
+                      }
                       const preset = templates.find(
                         (tpl) => tpl.id === templateId,
                       );
                       if (preset) {
-                        applyTemplatePreset(preset);
+                        setPendingTemplate(preset);
+                        setTemplateOverwriteConfig(true);
+                        setTemplateConfirmOpen(true);
                       }
                     }}
+                    endAdornment={
+                      selectedTemplateId ? (
+                        <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTemplateId("");
+                            }}
+                          >
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null
+                    }
                   >
                     <MenuItem value="">
                       <em>No template preset (manual)</em>
@@ -1779,6 +1858,29 @@ export default function ValidationPage() {
                       value={selectedDataset}
                       label="Select Dataset"
                       onChange={(e) => setSelectedDataset(e.target.value)}
+                      endAdornment={
+                        selectedDataset ? (
+                          <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDataset("");
+                                setSelectedModel("");
+                                setPredictionColumn("");
+                                setActualColumn("");
+                                setSensitiveFeature("");
+                                setTargetColumn("");
+                                setQuasiIdentifiers([]);
+                                setSensitiveAttribute("");
+                                setKAnonymityConfigs([makeKAnonymityConfigRow(5)]);
+                              }}
+                            >
+                              <ClearIcon fontSize="small" />
+                            </IconButton>
+                          </InputAdornment>
+                        ) : null
+                      }
                     >
                       {datasets?.map((d: any) => (
                         <MenuItem key={d.id} value={d.id}>
@@ -1818,6 +1920,21 @@ export default function ValidationPage() {
                         value={selectedModel}
                         label="Select Model"
                         onChange={(e) => setSelectedModel(e.target.value)}
+                        endAdornment={
+                          selectedModel ? (
+                            <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedModel("");
+                                }}
+                              >
+                                <ClearIcon fontSize="small" />
+                              </IconButton>
+                            </InputAdornment>
+                          ) : null
+                        }
                       >
                         {models?.map((m: any) => (
                           <MenuItem key={m.id} value={m.id}>
@@ -1913,7 +2030,25 @@ export default function ValidationPage() {
                                 setPredictionColumn(e.target.value)
                               }
                               disabled={!selectedDataset}
+                              endAdornment={
+                                predictionColumn ? (
+                                  <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPredictionColumn("");
+                                      }}
+                                    >
+                                      <ClearIcon fontSize="small" />
+                                    </IconButton>
+                                  </InputAdornment>
+                                ) : null
+                              }
                             >
+                              <MenuItem value="">
+                                <em>None</em>
+                              </MenuItem>
                               {selectedDatasetObj?.columns?.map(
                                 (col: string) => (
                                   <MenuItem key={col} value={col}>
@@ -1946,6 +2081,21 @@ export default function ValidationPage() {
                               label="Select column"
                               onChange={(e) => setActualColumn(e.target.value)}
                               disabled={!selectedDataset}
+                              endAdornment={
+                                actualColumn ? (
+                                  <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActualColumn("");
+                                      }}
+                                    >
+                                      <ClearIcon fontSize="small" />
+                                    </IconButton>
+                                  </InputAdornment>
+                                ) : null
+                              }
                             >
                               <MenuItem value="">
                                 <em>None</em>
@@ -1989,7 +2139,25 @@ export default function ValidationPage() {
                               setSensitiveFeature(e.target.value)
                             }
                             disabled={!selectedDataset}
+                            endAdornment={
+                              sensitiveFeature ? (
+                                <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSensitiveFeature("");
+                                    }}
+                                  >
+                                    <ClearIcon fontSize="small" />
+                                  </IconButton>
+                                </InputAdornment>
+                              ) : null
+                            }
                           >
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
                             {selectedDatasetObj?.columns?.map((col: string) => (
                               <MenuItem key={col} value={col}>
                                 {col}
@@ -2021,6 +2189,21 @@ export default function ValidationPage() {
                               label="Target Column"
                               onChange={(e) => setTargetColumn(e.target.value)}
                               disabled={!selectedDataset}
+                              endAdornment={
+                                targetColumn ? (
+                                  <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTargetColumn("");
+                                      }}
+                                    >
+                                      <ClearIcon fontSize="small" />
+                                    </IconButton>
+                                  </InputAdornment>
+                                ) : null
+                              }
                             >
                               <MenuItem value="">
                                 <em>None – use model predictions</em>
@@ -2204,6 +2387,21 @@ export default function ValidationPage() {
                             disabled={
                               !selectedDataset || !needsQuasiIdentifiers
                             }
+                            endAdornment={
+                              quasiIdentifiers && quasiIdentifiers.length > 0 ? (
+                                <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setQuasiIdentifiers([]);
+                                    }}
+                                  >
+                                    <ClearIcon fontSize="small" />
+                                  </IconButton>
+                                </InputAdornment>
+                              ) : null
+                            }
                             renderValue={(selected) => (
                               <Box
                                 sx={{
@@ -2256,6 +2454,21 @@ export default function ValidationPage() {
                             }
                             disabled={
                               !selectedDataset || !needsSensitiveAttribute
+                            }
+                            endAdornment={
+                              sensitiveAttribute ? (
+                                <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSensitiveAttribute("");
+                                    }}
+                                  >
+                                    <ClearIcon fontSize="small" />
+                                  </IconButton>
+                                </InputAdornment>
+                              ) : null
                             }
                           >
                             <MenuItem value="">None</MenuItem>
@@ -2339,6 +2552,24 @@ export default function ValidationPage() {
                                     })
                                   }
                                   disabled={!selectedDataset || isTemplatePresetActive}
+                                  endAdornment={
+                                    cfg.quasi_identifiers && cfg.quasi_identifiers.length > 0 ? (
+                                      <InputAdornment position="end" sx={{ marginRight: 3 }}>
+                                        <IconButton
+                                          size="small"
+                                          disabled={!selectedDataset || isTemplatePresetActive}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateKAnonymityConfig(cfg.id, {
+                                              quasi_identifiers: [],
+                                            });
+                                          }}
+                                        >
+                                          <ClearIcon fontSize="small" />
+                                        </IconButton>
+                                      </InputAdornment>
+                                    ) : null
+                                  }
                                   renderValue={(selected) => (
                                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                                       {selected.map((val) => (

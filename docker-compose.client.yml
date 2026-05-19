@@ -50,7 +50,7 @@ services:
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
       JWT_ALGORITHM: HS256
-      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 5256000
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost","http://localhost:80","http://127.0.0.1","http://127.0.0.1:80"]}
       DEBUG: "false"
       UPLOAD_DIR: /app/uploads

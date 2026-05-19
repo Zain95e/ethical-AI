@@ -67,6 +67,20 @@ def save_joblib(model, path):
     print(f"  Saved → {path}")
 
 
+def save_processed_dataset(df, feature_cols, target_col, out_name):
+    """Save the final preprocessed dataframe to disk so it can be uploaded to the platform."""
+    out_dir = "datasets/processed"
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, out_name)
+    
+    # Extract only the required features and the target column
+    keep_cols = [c for c in feature_cols if c in df.columns] + [target_col]
+    df_out = df[keep_cols].copy()
+    
+    df_out.to_csv(out_path, index=False)
+    print(f"  Saved Processed Dataset → {out_path} ({df_out.shape[1]} columns)")
+
+
 def encode_binary(series, positive_values):
     """Map values in positive_values → 1, everything else → 0."""
     return series.apply(lambda x: 1 if str(x).strip().lower() in positive_values else 0)
@@ -101,7 +115,8 @@ pipe1.fit(X_train, y_train)
 report("Adult Income — Logistic Regression", y_test, pipe1.predict(X_test))
 
 save_pkl(pipe1, "trained_models/model_1_income_logreg.pkl")
-print(f"  Dataset used → datasets/adult_income.csv  ({len(df_adult)} rows)")
+save_processed_dataset(df_adult, feature_cols, "income_binary", "adult_income_processed.csv")
+print(f"  Dataset used → datasets/processed/adult_income_processed.csv  ({len(df_adult)} rows)")
 
 metadata["model_1_income_logreg"] = {
     "file": "trained_models/model_1_income_logreg.pkl",
@@ -144,7 +159,8 @@ rf.fit(X2_train, y2_train)
 report("Credit Default — Random Forest", y2_test, rf.predict(X2_test))
 
 save_joblib(rf, "trained_models/model_2_credit_random_forest.joblib")
-print(f"  Dataset used → datasets/credit_default.csv  ({len(df_credit)} rows)")
+save_processed_dataset(df_credit, feature_cols2, "default", "credit_default_processed.csv")
+print(f"  Dataset used → datasets/processed/credit_default_processed.csv  ({len(df_credit)} rows)")
 
 metadata["model_2_credit_random_forest"] = {
     "file": "trained_models/model_2_credit_random_forest.joblib",
@@ -190,7 +206,8 @@ gbm.fit(X3_train, y3_train)
 report("Recidivism — Gradient Boosting", y3_test, gbm.predict(X3_test))
 
 save_pkl(gbm, "trained_models/model_3_recidivism_gbm.pkl")
-print(f"  Dataset used → datasets/compas_recidivism.csv  ({len(df_compas)} rows)")
+save_processed_dataset(df_compas, feature_cols3, "two_year_recid", "compas_recidivism_processed.csv")
+print(f"  Dataset used → datasets/processed/compas_recidivism_processed.csv  ({len(df_compas)} rows)")
 
 metadata["model_3_recidivism_gbm"] = {
     "file": "trained_models/model_3_recidivism_gbm.pkl",
@@ -253,7 +270,8 @@ pipe4.fit(X4_train, y4_train)
 report("Heart Disease — SVM", y4_test, pipe4.predict(X4_test))
 
 save_pkl(pipe4, "trained_models/model_4_heart_svm.pkl")
-print(f"  Dataset used → datasets/heart_disease.csv  ({len(df_heart)} rows)")
+save_processed_dataset(df_heart, feature_cols4, "target", "heart_disease_processed.csv")
+print(f"  Dataset used → datasets/processed/heart_disease_processed.csv  ({len(df_heart)} rows)")
 
 metadata["model_4_heart_svm"] = {
     "file": "trained_models/model_4_heart_svm.pkl",
@@ -308,7 +326,8 @@ pipe5.fit(X5_train, y5_train)
 report("Employee Attrition — MLP", y5_test, pipe5.predict(X5_test))
 
 save_pkl(pipe5, "trained_models/model_5_attrition_mlp.pkl")
-print(f"  Dataset used → datasets/ibm_hr_attrition.csv  ({len(df_ibm)} rows)")
+save_processed_dataset(df_ibm, feature_cols5, "Attrition_binary", "ibm_hr_attrition_processed.csv")
+print(f"  Dataset used → datasets/processed/ibm_hr_attrition_processed.csv  ({len(df_ibm)} rows)")
 
 metadata["model_5_attrition_mlp"] = {
     "file": "trained_models/model_5_attrition_mlp.pkl",
@@ -360,7 +379,8 @@ dt.fit(X6_train, y6_train)
 report("Student Pass/Fail — Decision Tree", y6_test, dt.predict(X6_test))
 
 save_pkl(dt, "trained_models/model_6_student_decision_tree.pkl")
-print(f"  Dataset used → datasets/student_performance.csv  ({len(df_student)} rows)")
+save_processed_dataset(df_student, feature_cols6, "pass_fail", "student_performance_processed.csv")
+print(f"  Dataset used → datasets/processed/student_performance_processed.csv  ({len(df_student)} rows)")
 
 metadata["model_6_student_decision_tree"] = {
     "file": "trained_models/model_6_student_decision_tree.pkl",
