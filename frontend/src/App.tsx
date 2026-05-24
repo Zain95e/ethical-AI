@@ -5,8 +5,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, CircularProgress, Box } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { theme } from './theme';
+import { getTheme } from './theme';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeModeProvider, useThemeMode } from './contexts/ThemeModeContext';
 
 // Pages
 import LoginPage from './pages/LoginPage';
@@ -137,17 +138,28 @@ function AppRoutes() {
   );
 }
 
+function AppContent() {
+  const { mode } = useThemeMode();
+  const currentTheme = getTheme(mode);
+
+  return (
+    <ThemeProvider theme={currentTheme}>
+      <CssBaseline />
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <BrowserRouter>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </BrowserRouter>
-      </ThemeProvider>
+      <ThemeModeProvider>
+        <AppContent />
+      </ThemeModeProvider>
     </QueryClientProvider>
   );
 }

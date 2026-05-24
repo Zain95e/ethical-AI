@@ -30,6 +30,7 @@ import {
     Checkbox,
     Tooltip,
     Stack,
+    useTheme,
 } from '@mui/material';
 import {
     ArrowBack as BackIcon,
@@ -53,7 +54,7 @@ import BenchmarkDatasetLoader from '../components/BenchmarkDatasetLoader';
 import TraceabilityMatrix from '../components/TraceabilityMatrix';
 import DatasetProfile from '../components/DatasetProfile';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
-import type { Template } from '../types';
+import type { Template, Requirement, MLModel, Dataset } from '../types';
 
 const formatChartNumber = (value: unknown): string => {
     const parsed = Number(value);
@@ -72,7 +73,36 @@ interface TabPanelProps {
 type MetricDetail = { value: number | null; threshold: number | null; passed: boolean | null };
 type PrincipleMetrics = Record<string, MetricDetail>;
 
-function CompareModal({ open, onClose, runA, runB }: { open: boolean; onClose: () => void; runA: any; runB: any }) {
+interface ValidationHistoryItem {
+    suite_id: string;
+    started_at: string;
+    completed_at: string | null;
+    overall_passed: boolean | null;
+    model_name: string | null;
+    dataset_name: string;
+    validations: {
+        fairness?: {
+            completed: boolean;
+            passed_count: number;
+            metrics_count: number;
+            metrics?: PrincipleMetrics;
+        };
+        transparency?: {
+            completed: boolean;
+            passed_count: number;
+            metrics_count: number;
+            metrics?: PrincipleMetrics;
+        };
+        privacy?: {
+            completed: boolean;
+            passed_count: number;
+            metrics_count: number;
+            metrics?: PrincipleMetrics;
+        };
+    };
+}
+
+function CompareModal({ open, onClose, runA, runB }: { open: boolean; onClose: () => void; runA: ValidationHistoryItem | null | undefined; runB: ValidationHistoryItem | null | undefined }) {
     if (!runA || !runB) return null;
 
     const principles: Array<{ key: 'fairness' | 'transparency' | 'privacy'; label: string }> = [
@@ -291,6 +321,7 @@ export default function ProjectDetailPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const theme = useTheme();
 
     const [tab, setTab] = useState(0);
     const [uploadModelOpen, setUploadModelOpen] = useState(false);
@@ -328,21 +359,21 @@ export default function ProjectDetailPage() {
     });
 
     // Fetch models
-    const { data: models, isLoading: modelsLoading } = useQuery({
+    const { data: models, isLoading: modelsLoading } = useQuery<MLModel[]>({
         queryKey: ['models', id],
         queryFn: () => modelsApi.list(id!),
         enabled: !!id,
     });
 
     // Fetch datasets
-    const { data: datasets, isLoading: datasetsLoading } = useQuery({
+    const { data: datasets, isLoading: datasetsLoading } = useQuery<Dataset[]>({
         queryKey: ['datasets', id],
         queryFn: () => datasetsApi.list(id!),
         enabled: !!id,
     });
 
     // Fetch validation history
-    const { data: savedRequirements = [] } = useQuery({
+    const { data: savedRequirements = [] } = useQuery<Requirement[]>({
         queryKey: ['requirements', id],
         queryFn: () => requirementsApi.listByProject(id!),
         enabled: !!id,
@@ -358,20 +389,20 @@ export default function ProjectDetailPage() {
 
     // Duplicate requirement mutation (Phase 5 – 6.7)
     const duplicateRequirementMutation = useMutation({
-        mutationFn: (req: any) =>
+        mutationFn: (req: Requirement) =>
             requirementsApi.create(id!, {
                 name: `${req.name} (Copy)`,
                 principle: req.principle,
-                description: req.description,
+                description: req.description ?? undefined,
                 specification: req.specification,
-                based_on_template_id: req.based_on_template_id,
+                based_on_template_id: req.based_on_template_id ?? undefined,
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['requirements', id] });
         },
     });
 
-    const { data: validationHistory, isLoading: validationsLoading } = useQuery({
+    const { data: validationHistory, isLoading: validationsLoading } = useQuery<ValidationHistoryItem[]>({
         queryKey: ['validations', id],
         queryFn: () => validationApi.getHistory(id!),
         enabled: !!id && tab === 3,
@@ -639,7 +670,7 @@ export default function ProjectDetailPage() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {models?.map((model: any) => (
+                                {models?.map((model: MLModel) => (
                                     <TableRow key={model.id}>
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -649,12 +680,12 @@ export default function ProjectDetailPage() {
                                         </TableCell>
                                         <TableCell>
                                             <Tooltip
-                                                title={model.model_metadata?.algorithm || model.model_type}
+                                                title={(model.model_metadata?.algorithm as string | undefined) || model.model_type}
                                                 placement="top"
                                             >
                                                 <Chip
                                                     label={
-                                                        model.model_metadata?.algorithm
+                                                        typeof model.model_metadata?.algorithm === 'string'
                                                             ? model.model_metadata.algorithm.split('(')[0].trim()
                                                             : model.model_type
                                                     }
@@ -740,7 +771,7 @@ export default function ProjectDetailPage() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {datasets?.map((dataset: any) => (
+                                    {datasets?.map((dataset: Dataset) => (
                                         <TableRow key={dataset.id}>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -856,7 +887,7 @@ export default function ProjectDetailPage() {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {savedRequirements.map((req: any) => {
+                                {savedRequirements.map((req: Requirement) => {
                                     const srcTemplate = req.based_on_template_id
                                         ? templateMap.get(req.based_on_template_id)
                                         : null;
@@ -987,7 +1018,7 @@ export default function ProjectDetailPage() {
                         {/* Fairness Metrics Over Time Chart */}
                         {(() => {
                             const chartRuns = (validationHistory || [])
-                                .filter((v: any) => v.validations?.fairness?.completed && v.validations.fairness.metrics && Object.keys(v.validations.fairness.metrics).length > 0)
+                                .filter((v: ValidationHistoryItem) => !!(v.validations?.fairness?.completed && v.validations.fairness.metrics && Object.keys(v.validations.fairness.metrics).length > 0))
                                 .reverse(); // oldest first
                             if (chartRuns.length < 2) {
                                 return (
@@ -1002,56 +1033,64 @@ export default function ProjectDetailPage() {
                             }
                             // Collect all metric keys across runs
                             const metricKeys = new Set<string>();
-                            chartRuns.forEach((v: any) => {
-                                Object.keys(v.validations.fairness.metrics).forEach((k: string) => metricKeys.add(k));
+                            chartRuns.forEach((v: ValidationHistoryItem) => {
+                                if (v.validations?.fairness?.metrics) {
+                                    Object.keys(v.validations.fairness.metrics).forEach((k: string) => metricKeys.add(k));
+                                }
                             });
-                            const chartData = chartRuns.map((v: any) => {
-                                const point: Record<string, any> = { date: new Date(v.started_at).toLocaleDateString() };
+                            const chartData = chartRuns.map((v: ValidationHistoryItem) => {
+                                const point: Record<string, string | number> = { date: new Date(v.started_at).toLocaleDateString() };
                                 metricKeys.forEach((k) => {
-                                    const m = v.validations.fairness.metrics[k];
-                                    if (m) point[k] = Number(m.value);
+                                    const m = v.validations?.fairness?.metrics?.[k];
+                                    if (m && m.value !== null) point[k] = Number(m.value);
                                 });
                                 return point;
                             });
                             const COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#f44336', '#00bcd4', '#ffeb3b'];
                             
+                            const isDark = theme.palette.mode === 'dark';
                             return (
-                                <Card sx={{ mb: 3, background: 'rgba(30, 41, 59, 0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <Card sx={{ 
+                                    mb: 3, 
+                                    background: isDark ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.7)', 
+                                    backdropFilter: 'blur(10px)', 
+                                    border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)' 
+                                }}>
                                     <CardContent>
-                                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#fff' }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: 'text.primary' }}>
                                             Fairness Metrics Over Time
                                         </Typography>
                                         <ResponsiveContainer width="100%" height={280}>
                                             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+                                                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} vertical={false} />
                                                 <XAxis 
                                                     dataKey="date" 
-                                                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.6)' }} 
-                                                    axisLine={{ stroke: 'rgba(255,255,255,0.2)' }}
-                                                    tickLine={{ stroke: 'rgba(255,255,255,0.2)' }}
+                                                    tick={{ fontSize: 11, fill: theme.palette.text.secondary }} 
+                                                    axisLine={{ stroke: theme.palette.divider }}
+                                                    tickLine={{ stroke: theme.palette.divider }}
                                                 />
                                                 <YAxis 
-                                                    tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.6)' }} 
-                                                    axisLine={{ stroke: 'rgba(255,255,255,0.2)' }}
-                                                    tickLine={{ stroke: 'rgba(255,255,255,0.2)' }}
+                                                    tick={{ fontSize: 11, fill: theme.palette.text.secondary }} 
+                                                    axisLine={{ stroke: theme.palette.divider }}
+                                                    tickLine={{ stroke: theme.palette.divider }}
                                                     domain={[0, 'auto']} 
                                                     tickFormatter={formatChartNumber} 
                                                 />
                                                 <RechartsTooltip 
                                                     formatter={(value) => formatChartNumber(value)}
                                                     contentStyle={{ 
-                                                        backgroundColor: '#0f172a', 
-                                                        border: '1px solid rgba(255,255,255,0.2)',
+                                                        backgroundColor: theme.palette.background.paper, 
+                                                        border: '1px solid ' + theme.palette.divider,
                                                         borderRadius: '8px',
-                                                        color: '#fff',
-                                                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
+                                                        color: theme.palette.text.primary,
+                                                        boxShadow: isDark ? '0 10px 15px -3px rgba(0, 0, 0, 0.5)' : '0 10px 15px -3px rgba(0, 0, 0, 0.08)'
                                                     }}
                                                     itemStyle={{ padding: '2px 0' }}
-                                                    labelStyle={{ fontWeight: 700, marginBottom: '8px', color: '#94a3b8' }}
+                                                    labelStyle={{ fontWeight: 700, marginBottom: '8px', color: theme.palette.text.secondary }}
                                                 />
                                                 <Legend 
                                                     wrapperStyle={{ paddingTop: '20px' }}
-                                                    formatter={(value) => <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px' }}>{value}</span>}
+                                                    formatter={(value) => <span style={{ color: theme.palette.text.secondary, fontSize: '12px' }}>{value}</span>}
                                                 />
                                                 {Array.from(metricKeys).map((key, idx) => (
                                                     <Line
@@ -1093,7 +1132,7 @@ export default function ProjectDetailPage() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {validationHistory?.map((validation: any) => (
+                                    {validationHistory?.map((validation: ValidationHistoryItem) => (
                                         <TableRow
                                             key={validation.suite_id}
                                             selected={compareSelected.has(validation.suite_id)}
@@ -1183,8 +1222,8 @@ export default function ProjectDetailPage() {
                         {/* Compare modal */}
                         {(() => {
                             const [idA, idB] = Array.from(compareSelected);
-                            const runA = validationHistory?.find((v: any) => v.suite_id === idA);
-                            const runB = validationHistory?.find((v: any) => v.suite_id === idB);
+                            const runA = validationHistory?.find((v: ValidationHistoryItem) => v.suite_id === idA);
+                            const runB = validationHistory?.find((v: ValidationHistoryItem) => v.suite_id === idB);
                             return (
                                 <CompareModal
                                     open={compareModalOpen}
@@ -1342,8 +1381,8 @@ export default function ProjectDetailPage() {
                 open={benchmarkLoaderOpen}
                 onClose={() => setBenchmarkLoaderOpen(false)}
                 projectId={id!}
-                existingModelNames={(models ?? []).map((m: any) => m.name)}
-                existingDatasetNames={(datasets ?? []).map((d: any) => d.name)}
+                existingModelNames={(models ?? []).map((m: MLModel) => m.name)}
+                existingDatasetNames={(datasets ?? []).map((d: Dataset) => d.name)}
                 onSuccess={(name, type) => {
                     if (type === 'model') {
                         queryClient.invalidateQueries({ queryKey: ['models', id] });

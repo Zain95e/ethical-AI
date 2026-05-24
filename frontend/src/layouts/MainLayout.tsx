@@ -32,8 +32,11 @@ import {
     Person as PersonIcon,
     AdminPanelSettings as AdminIcon,
     MenuBook as KnowledgeIcon,
+    DarkMode as DarkModeIcon,
+    LightMode as LightModeIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useThemeMode } from '../contexts/ThemeModeContext';
 import NotificationBell from '../components/NotificationBell';
 
 const DRAWER_WIDTH = 260;
@@ -54,6 +57,7 @@ export default function MainLayout() {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, profilePic, logout } = useAuth();
+    const { mode, toggleThemeMode } = useThemeMode();
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -103,7 +107,7 @@ export default function MainLayout() {
                 </Box>
             </Box>
 
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)' }} />
+            <Divider />
 
             {/* Navigation */}
             <List sx={{ px: 2, flex: 1 }}>
@@ -124,7 +128,7 @@ export default function MainLayout() {
                                     '&:hover': {
                                         backgroundColor: isActive
                                             ? 'rgba(102, 126, 234, 0.2)'
-                                            : 'rgba(255, 255, 255, 0.05)',
+                                            : 'action.hover',
                                     },
                                 }}
                             >
@@ -150,7 +154,7 @@ export default function MainLayout() {
             </List>
 
             {/* User Info */}
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)' }} />
+            <Divider />
             <Box sx={{ p: 2 }}>
                 <Box
                     sx={{
@@ -158,7 +162,7 @@ export default function MainLayout() {
                         alignItems: 'center',
                         p: 1.5,
                         borderRadius: 2,
-                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
                     }}
                 >
                     <Avatar
@@ -205,6 +209,10 @@ export default function MainLayout() {
                     </IconButton>
 
                     <Box sx={{ flexGrow: 1 }} />
+
+                    <IconButton onClick={toggleThemeMode} color="inherit" sx={{ mr: 1 }}>
+                        {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+                    </IconButton>
 
                     <NotificationBell />
 

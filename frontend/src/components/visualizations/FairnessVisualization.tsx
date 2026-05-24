@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper } from '@mui/material';
+import { Box, Card, CardContent, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper, useTheme } from '@mui/material';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, Cell } from 'recharts';
 import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
@@ -72,6 +72,8 @@ const fmt2dp = (value: ValueType | undefined) => {
 };
 
 export default function FairnessVisualization({ metrics, confusion_matrices }: FairnessVisualizationProps) {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
     const barData = metrics.map((m) => ({ metric: m.name, value: m.value, threshold: m.threshold }));
 
     // Normalize metrics to [0, 1] range for radar chart
@@ -96,13 +98,19 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                     <Box sx={{ height: 320 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={barData} margin={{ top: 10, left: 10, right: 10, bottom: 40 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="metric" angle={-20} textAnchor="end" height={70} />
-                                <YAxis />
+                                <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                <XAxis dataKey="metric" angle={-20} textAnchor="end" height={70} tick={{ fill: theme.palette.text.secondary }} />
+                                <YAxis tick={{ fill: theme.palette.text.secondary }} />
                                 <Tooltip 
                                     formatter={(value) => fmt2dp(value)} 
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
-                                    itemStyle={{ color: '#e2e8f0' }}
+                                    contentStyle={{ 
+                                        backgroundColor: theme.palette.background.paper, 
+                                        border: '1px solid ' + theme.palette.divider, 
+                                        borderRadius: '8px', 
+                                        color: theme.palette.text.primary, 
+                                        boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.08)' 
+                                    }}
+                                    itemStyle={{ color: theme.palette.text.secondary }}
                                 />
                                 <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: '20px' }} />
                                 <Bar dataKey="value" name="Actual Value" fill="#3b82f6" />
@@ -131,12 +139,18 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                                     data={groupData}
                                     margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="group" />
-                                    <YAxis domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                                    <XAxis dataKey="group" tick={{ fill: theme.palette.text.secondary }} />
+                                    <YAxis domain={[0, 1]} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} tick={{ fill: theme.palette.text.secondary }} />
                                     <Tooltip
-                                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
-                                        itemStyle={{ color: '#e2e8f0' }}
+                                        contentStyle={{ 
+                                            backgroundColor: theme.palette.background.paper, 
+                                            border: '1px solid ' + theme.palette.divider, 
+                                            borderRadius: '8px', 
+                                            color: theme.palette.text.primary, 
+                                            boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.08)' 
+                                        }}
+                                        itemStyle={{ color: theme.palette.text.secondary }}
                                         formatter={(value) => {
                                             const n = toNumber(value);
                                             return [n == null ? 'N/A' : `${(n * 100).toFixed(2)}%`, 'Selection Rate'];
@@ -163,7 +177,7 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                                 borderRadius: 2,
                                 color: 'text.secondary',
                                 gap: 1,
-                            }}
+                             }}
                         >
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                 No per-group data available
@@ -184,16 +198,22 @@ export default function FairnessVisualization({ metrics, confusion_matrices }: F
                     <Box sx={{ height: 340 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                                <PolarGrid gridType="polygon" stroke="rgba(255,255,255,0.1)" />
-                                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: '#cbd5e1', fontWeight: 500 }} tickFormatter={(val) => val.split('_').join(' ')} />
-                                <PolarRadiusAxis domain={[0, 1]} tick={{ fontSize: 10, fill: '#64748b' }} angle={30} stroke="rgba(255,255,255,0.1)" />
+                                <PolarGrid gridType="polygon" stroke={theme.palette.divider} />
+                                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: theme.palette.text.secondary, fontWeight: 500 }} tickFormatter={(val) => val.split('_').join(' ')} />
+                                <PolarRadiusAxis domain={[0, 1]} tick={{ fontSize: 10, fill: theme.palette.text.disabled }} angle={30} stroke={theme.palette.divider} />
                                 <Radar name="Actual" dataKey="actual" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.4} strokeWidth={2} />
                                 <Radar name="Threshold" dataKey="threshold" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.25} strokeWidth={2} />
                                 <Legend wrapperStyle={{ paddingTop: '20px' }} />
                                 <Tooltip 
                                     formatter={(value) => fmt2dp(value)} 
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
-                                    itemStyle={{ color: '#e2e8f0' }}
+                                    contentStyle={{ 
+                                        backgroundColor: theme.palette.background.paper, 
+                                        border: '1px solid ' + theme.palette.divider, 
+                                        borderRadius: '8px', 
+                                        color: theme.palette.text.primary, 
+                                        boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.5)' : '0 4px 20px rgba(0,0,0,0.08)' 
+                                    }}
+                                    itemStyle={{ color: theme.palette.text.secondary }}
                                 />
                             </RadarChart>
                         </ResponsiveContainer>

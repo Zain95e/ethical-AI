@@ -80,6 +80,11 @@ export interface Template {
     updated_at: string;
 }
 
+export interface RequirementSpecification {
+    rules?: unknown[];
+    [key: string]: unknown;
+}
+
 // Requirement types
 export interface Requirement {
     id: string;
@@ -87,10 +92,11 @@ export interface Requirement {
     name: string;
     description: string | null;
     principle: 'fairness' | 'transparency' | 'privacy' | 'accountability';
-    specification: Record<string, unknown>;
+    specification: RequirementSpecification;
     based_on_template_id: string | null;
     status: 'draft' | 'active' | 'archived';
     version: number;
+    elicited_automatically?: boolean;
     created_at: string;
 }
 

@@ -19,6 +19,7 @@ import {
     ListItem,
     ListItemIcon,
     ListItemText,
+    useTheme,
 } from '@mui/material';
 import {
     Email as EmailIcon,
@@ -41,6 +42,8 @@ const PASSWORD_RULES = [
 export default function RegisterPage() {
     const navigate = useNavigate();
     const { register } = useAuth();
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -88,7 +91,9 @@ export default function RegisterPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)',
+                background: isDark
+                    ? 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)'
+                    : 'linear-gradient(135deg, #f4f6fa 0%, #e2e8f0 50%, #f4f6fa 100%)',
                 position: 'relative',
                 overflow: 'hidden',
                 py: 4,
@@ -100,7 +105,9 @@ export default function RegisterPage() {
                     transform: 'translate(-50%, -50%)',
                     width: '600px',
                     height: '600px',
-                    background: 'radial-gradient(circle, rgba(118, 75, 162, 0.15) 0%, transparent 70%)',
+                    background: isDark
+                        ? 'radial-gradient(circle, rgba(118, 75, 162, 0.15) 0%, transparent 70%)'
+                        : 'radial-gradient(circle, rgba(118, 75, 162, 0.08) 0%, transparent 70%)',
                     borderRadius: '50%',
                 },
             }}
@@ -139,9 +146,16 @@ export default function RegisterPage() {
 
                 <Card
                     sx={{
-                        background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                        background: isDark
+                            ? 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)'
+                            : 'linear-gradient(145deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.7) 100%)',
                         backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        border: isDark
+                            ? '1px solid rgba(255, 255, 255, 0.1)'
+                            : '1px solid rgba(0, 0, 0, 0.08)',
+                        boxShadow: isDark
+                            ? '0 10px 30px rgba(0, 0, 0, 0.5)'
+                            : '0 10px 30px rgba(0, 0, 0, 0.04)',
                     }}
                 >
                     <CardContent sx={{ p: 4 }}>

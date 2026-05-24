@@ -25,27 +25,27 @@
   --warning-light: #fbbf24;
   --warning-dark: #b45309;
 
-  --background-default: #0b1220;
-  --background-paper: #111a2e;
-  --background-elevated: #1a2740;
+  --background-default: #f8fafc;
+  --background-paper: #ffffff;
+  --background-elevated: #ffffff;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
   --text-disabled: #94a3b8;
 
-  --border-color: rgba(148, 163, 184, 0.22);
+  --border-color: rgba(148, 163, 184, 0.15);
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #2563eb 0%, #14b8a6 100%);
   --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
   --gradient-error: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%);
-  --gradient-card: linear-gradient(145deg, rgba(148, 163, 184, 0.14) 0%, rgba(148, 163, 184, 0.05) 100%);
+  --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
 
   /* Shadows */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.25);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.12);
 
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -103,16 +103,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background-paper);
+  background: var(--background-default);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--primary-700);
+  background: var(--primary-300);
   border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-600);
+  background: var(--primary-400);
 }
 
 /* Focus styles for accessibility */
@@ -129,13 +129,13 @@ body {
 
 /* Links */
 a {
-  color: var(--primary-400);
+  color: var(--primary-600);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--primary-300);
+  color: var(--primary-700);
 }
 
 /* Utility classes */

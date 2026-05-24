@@ -1,9 +1,8 @@
 import { createTheme } from '@mui/material/styles';
 
-// Custom dark theme for Ethical AI Platform
-export const theme = createTheme({
+export const getTheme = (mode: 'light' | 'dark') => createTheme({
     palette: {
-        mode: 'dark',
+        mode,
         primary: {
             main: '#3b82f6',
             light: '#60a5fa',
@@ -37,15 +36,15 @@ export const theme = createTheme({
             dark: '#0369a1',
         },
         background: {
-            default: '#0b1220',
-            paper: '#111a2e',
+            default: mode === 'dark' ? '#0b1220' : '#f8fafc',
+            paper: mode === 'dark' ? '#111a2e' : '#ffffff',
         },
         text: {
-            primary: '#f8fafc',
-            secondary: '#cbd5e1',
+            primary: mode === 'dark' ? '#f8fafc' : '#0f172a',
+            secondary: mode === 'dark' ? '#cbd5e1' : '#475569',
             disabled: '#94a3b8',
         },
-        divider: 'rgba(148, 163, 184, 0.22)',
+        divider: mode === 'dark' ? 'rgba(148, 163, 184, 0.22)' : 'rgba(148, 163, 184, 0.15)',
     },
     typography: {
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -114,8 +113,8 @@ export const theme = createTheme({
         MuiCard: {
             styleOverrides: {
                 root: {
-                    background: '#111a2e',
-                    border: '1px solid rgba(148, 163, 184, 0.22)',
+                    background: mode === 'dark' ? '#111a2e' : '#ffffff',
+                    border: mode === 'dark' ? '1px solid rgba(148, 163, 184, 0.22)' : '1px solid rgba(148, 163, 184, 0.15)',
                     borderRadius: 16,
                 },
             },
@@ -133,10 +132,10 @@ export const theme = createTheme({
                     '& .MuiOutlinedInput-root': {
                         borderRadius: 8,
                         '& fieldset': {
-                            borderColor: 'rgba(148, 163, 184, 0.35)',
+                            borderColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.35)' : 'rgba(148, 163, 184, 0.3)',
                         },
                         '&:hover fieldset': {
-                            borderColor: 'rgba(148, 163, 184, 0.55)',
+                            borderColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.55)' : 'rgba(148, 163, 184, 0.5)',
                         },
                         '&.Mui-focused fieldset': {
                             borderColor: '#3b82f6',
@@ -148,8 +147,9 @@ export const theme = createTheme({
         MuiAppBar: {
             styleOverrides: {
                 root: {
-                    background: '#0f172a',
-                    borderBottom: '1px solid rgba(148, 163, 184, 0.22)',
+                    background: mode === 'dark' ? '#0f172a' : '#ffffff',
+                    color: mode === 'dark' ? '#f8fafc' : '#0f172a',
+                    borderBottom: mode === 'dark' ? '1px solid rgba(148, 163, 184, 0.22)' : '1px solid rgba(148, 163, 184, 0.15)',
                     boxShadow: 'none',
                 },
             },
@@ -157,8 +157,8 @@ export const theme = createTheme({
         MuiDrawer: {
             styleOverrides: {
                 paper: {
-                    background: '#0f172a',
-                    borderRight: '1px solid rgba(148, 163, 184, 0.22)',
+                    background: mode === 'dark' ? '#0f172a' : '#ffffff',
+                    borderRight: mode === 'dark' ? '1px solid rgba(148, 163, 184, 0.22)' : '1px solid rgba(148, 163, 184, 0.15)',
                 },
             },
         },
