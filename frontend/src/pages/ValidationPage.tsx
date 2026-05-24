@@ -314,8 +314,6 @@ export default function ValidationPage() {
   const [results, setResults] = useState<any>(null);
   const [runError, setRunError] = useState("");
 
-  // Warning dialog
-  const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [selectedFairnessMetric, setSelectedFairnessMetric] =
     useState<any>(null);
 
@@ -975,22 +973,13 @@ export default function ValidationPage() {
     setUseRequirementThresholds(true);
   };
 
-  const handleRun = async (skipWarning = false) => {
+  const handleRun = async () => {
     const configErr = validateConfig();
     if (configErr) {
       setFormError(configErr);
       return;
     }
     setFormError("");
-    if (
-      !skipWarning &&
-      selectedValidators.includes("fairness") &&
-      predictionMode === "model" &&
-      !targetColumn
-    ) {
-      setShowWarningDialog(true);
-      return;
-    }
     setIsRunning(true);
     setProgress(0);
     setCurrentStep("Queuing validations…");
@@ -1195,57 +1184,6 @@ export default function ValidationPage() {
 
   return (
     <>
-      {/* No-target warning */}
-      <Dialog
-        open={showWarningDialog}
-        onClose={() => setShowWarningDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle
-          sx={{ bgcolor: "warning.main", color: "warning.contrastText" }}
-        >
-          ⚠️ No Target Column Specified
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <DialogContentText>
-            Without a target column, fairness analysis uses{" "}
-            <strong>model predictions as ground truth</strong>. Results may be
-            misleading.
-          </DialogContentText>
-          <Box component="ul" sx={{ mt: 1, pl: 2 }}>
-            <li>
-              <DialogContentText>
-                Accuracy-based metrics won't reflect real-world performance
-              </DialogContentText>
-            </li>
-            <li>
-              <DialogContentText>
-                Only internal prediction consistency is checked
-              </DialogContentText>
-            </li>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setShowWarningDialog(false)}
-          >
-            Cancel – Add Target Column
-          </Button>
-          <Button
-            variant="contained"
-            color="warning"
-            onClick={() => {
-              setShowWarningDialog(false);
-              handleRun(true);
-            }}
-          >
-            Proceed Anyway
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       <Dialog open={templateConfirmOpen} onClose={() => setTemplateConfirmOpen(false)}>
         <DialogTitle>Apply Template Preset</DialogTitle>
         <DialogContent>
@@ -2217,16 +2155,6 @@ export default function ValidationPage() {
                               )}
                             </Select>
                           </FormControl>
-                          {!targetColumn && (
-                            <Typography
-                              variant="caption"
-                              color="warning.main"
-                              sx={{ mt: 0.5, display: "block" }}
-                            >
-                              ⚠️ Without a target column, predictions are used
-                              as ground truth
-                            </Typography>
-                          )}
                         </Box>
                       )}
                     </Box>
