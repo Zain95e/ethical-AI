@@ -339,7 +339,7 @@ _MODELS_BASE = Path(__file__).resolve().parent.parent.parent / "dataset-models" 
 
 BENCHMARK_MODELS = {
     "model_1_income_logreg": {
-        "name": "Adult Income — Logistic Regression",
+        "name": "Adult Income Predictor",
         "description": (
             "Predicts whether an adult earns >$50K/year (income_binary). "
             "Trained on 30 162 census records. "
@@ -356,7 +356,7 @@ BENCHMARK_MODELS = {
         "dataset_key": "adult_income",
     },
     "model_2_credit_random_forest": {
-        "name": "Credit Card Default — Random Forest",
+        "name": "Credit Card Default Classifier",
         "description": (
             "Predicts credit card payment default (default). "
             "Trained on 30 000 Taiwan credit records. "
@@ -373,7 +373,7 @@ BENCHMARK_MODELS = {
         "dataset_key": "credit_default",
     },
     "model_3_recidivism_gbm": {
-        "name": "Recidivism Risk — Gradient Boosting",
+        "name": "Recidivism Risk Assessor",
         "description": (
             "Predicts 2-year recidivism risk (two_year_recid). "
             "Trained on 7 214 COMPAS records. "
@@ -390,7 +390,7 @@ BENCHMARK_MODELS = {
         "dataset_key": "compas_recidivism",
     },
     "model_4_heart_svm": {
-        "name": "Heart Disease — SVM",
+        "name": "Heart Disease Detector",
         "description": (
             "Detects cardiac disease presence (target). "
             "Trained on 299 Cleveland Heart Disease records. "
@@ -407,7 +407,7 @@ BENCHMARK_MODELS = {
         "dataset_key": "heart_disease",
     },
     "model_5_attrition_mlp": {
-        "name": "Employee Attrition — MLP Neural Network",
+        "name": "Employee Attrition Predictor",
         "description": (
             "Predicts employee attrition (Attrition_binary). "
             "Trained on 1 470 IBM HR records. "
@@ -424,7 +424,7 @@ BENCHMARK_MODELS = {
         "dataset_key": "ibm_hr_attrition",
     },
     "model_6_student_decision_tree": {
-        "name": "Student Pass/Fail — Decision Tree",
+        "name": "Student Pass/Fail Predictor",
         "description": (
             "Predicts student pass/fail outcome (pass_fail). "
             "Trained on 395 Portuguese student records. "

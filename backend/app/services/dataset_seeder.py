@@ -39,7 +39,7 @@ class BenchmarkDatasetSeeder:
     # Dataset metadata configuration – 6 locally trained datasets
     BENCHMARK_DATASETS: Dict[str, Dict] = {
         "adult_income": {
-            "name": "Adult Income (Logistic Regression)",
+            "name": "Adult Income",
             "description": (
                 "Census data predicting whether an adult earns >$50K/year. "
                 "Classic fairness benchmark for Finance / Social Policy. "
@@ -57,7 +57,7 @@ class BenchmarkDatasetSeeder:
             "accuracy": 0.8228,
         },
         "credit_default": {
-            "name": "Credit Card Default (Random Forest)",
+            "name": "Credit Card Default",
             "description": (
                 "Taiwan credit-card dataset predicting payment default. "
                 "Tests gender-based fairness in Banking / Credit Risk. "
@@ -75,7 +75,7 @@ class BenchmarkDatasetSeeder:
             "accuracy": 0.8185,
         },
         "compas_recidivism": {
-            "name": "Recidivism Risk (Gradient Boosting)",
+            "name": "Recidivism Risk",
             "description": (
                 "COMPAS recidivism dataset predicting 2-year reoffending risk. "
                 "Replicates the algorithm studied for racial bias in Criminal Justice. "
@@ -93,7 +93,7 @@ class BenchmarkDatasetSeeder:
             "accuracy": 0.6881,
         },
         "heart_disease": {
-            "name": "Heart Disease (SVM)",
+            "name": "Heart Disease",
             "description": (
                 "Cleveland Heart Disease dataset detecting cardiac disease presence. "
                 "Tests sex and age disparities in Healthcare / Medical Diagnosis. "
@@ -111,7 +111,7 @@ class BenchmarkDatasetSeeder:
             "accuracy": 0.8667,
         },
         "ibm_hr_attrition": {
-            "name": "Employee Attrition (MLP Neural Network)",
+            "name": "Employee Attrition",
             "description": (
                 "IBM HR Analytics dataset predicting employee attrition. "
                 "Tests gender and age fairness in HR / People Analytics. "
@@ -129,7 +129,7 @@ class BenchmarkDatasetSeeder:
             "accuracy": 0.8673,
         },
         "student_performance": {
-            "name": "Student Pass/Fail (Decision Tree)",
+            "name": "Student Pass/Fail",
             "description": (
                 "Portuguese student performance dataset predicting pass/fail outcomes. "
                 "Tests gender and urban/rural fairness in Education / Academic Performance. "

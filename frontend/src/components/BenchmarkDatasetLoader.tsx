@@ -67,7 +67,7 @@ interface BenchmarkLoaderProps {
 const BENCHMARK_DATASETS: BenchmarkEntry[] = [
     {
         key: 'adult_income',
-        name: 'Adult Income (Logistic Regression)',
+        name: 'Adult Income',
         description:
             'Census data predicting whether an adult earns >$50K/year. Classic fairness benchmark for Finance / Social Policy.',
         domain: 'finance',
@@ -78,7 +78,7 @@ const BENCHMARK_DATASETS: BenchmarkEntry[] = [
     },
     {
         key: 'credit_default',
-        name: 'Credit Card Default (Random Forest)',
+        name: 'Credit Card Default',
         description:
             'Taiwan credit-card dataset predicting payment default. Tests gender-based fairness in Banking / Credit Risk.',
         domain: 'finance',
@@ -89,7 +89,7 @@ const BENCHMARK_DATASETS: BenchmarkEntry[] = [
     },
     {
         key: 'compas_recidivism',
-        name: 'Recidivism Risk (Gradient Boosting)',
+        name: 'Recidivism Risk',
         description:
             'COMPAS recidivism dataset predicting 2-year reoffending risk. Widely studied for racial bias in Criminal Justice.',
         domain: 'criminal_justice',
@@ -100,7 +100,7 @@ const BENCHMARK_DATASETS: BenchmarkEntry[] = [
     },
     {
         key: 'heart_disease',
-        name: 'Heart Disease (SVM)',
+        name: 'Heart Disease',
         description:
             'Cleveland Heart Disease dataset detecting cardiac disease. Tests sex and age disparities in Healthcare / Medical Diagnosis.',
         domain: 'healthcare',
@@ -111,7 +111,7 @@ const BENCHMARK_DATASETS: BenchmarkEntry[] = [
     },
     {
         key: 'ibm_hr_attrition',
-        name: 'Employee Attrition (MLP Neural Network)',
+        name: 'Employee Attrition',
         description:
             'IBM HR Analytics dataset predicting employee attrition. Tests gender and age fairness in HR / People Analytics.',
         domain: 'employment',
@@ -122,7 +122,7 @@ const BENCHMARK_DATASETS: BenchmarkEntry[] = [
     },
     {
         key: 'student_performance',
-        name: 'Student Pass/Fail (Decision Tree)',
+        name: 'Student Pass/Fail',
         description:
             'Portuguese student performance dataset predicting pass/fail outcomes. Tests gender and urban/rural fairness in Education.',
         domain: 'education',
@@ -136,7 +136,7 @@ const BENCHMARK_DATASETS: BenchmarkEntry[] = [
 const BENCHMARK_MODELS: BenchmarkEntry[] = [
     {
         key: 'model_1_income_logreg',
-        name: 'Adult Income — Logistic Regression',
+        name: 'Adult Income Predictor',
         description: 'Predicts whether an adult earns >$50K/year (income_binary). Trained on 30 162 census records.',
         domain: 'finance',
         target_column: 'income_binary',
@@ -148,7 +148,7 @@ const BENCHMARK_MODELS: BenchmarkEntry[] = [
     },
     {
         key: 'model_2_credit_random_forest',
-        name: 'Credit Card Default — Random Forest',
+        name: 'Credit Card Default Classifier',
         description: 'Predicts credit card payment default (default). Trained on 30 000 Taiwan credit records.',
         domain: 'finance',
         target_column: 'default',
@@ -160,7 +160,7 @@ const BENCHMARK_MODELS: BenchmarkEntry[] = [
     },
     {
         key: 'model_3_recidivism_gbm',
-        name: 'Recidivism Risk — Gradient Boosting',
+        name: 'Recidivism Risk Assessor',
         description: 'Predicts 2-year recidivism risk (two_year_recid). Trained on 7 214 COMPAS records.',
         domain: 'criminal_justice',
         target_column: 'two_year_recid',
@@ -172,7 +172,7 @@ const BENCHMARK_MODELS: BenchmarkEntry[] = [
     },
     {
         key: 'model_4_heart_svm',
-        name: 'Heart Disease — SVM',
+        name: 'Heart Disease Detector',
         description: 'Detects cardiac disease presence (target). Trained on 299 Cleveland Heart Disease records.',
         domain: 'healthcare',
         target_column: 'target',
@@ -184,7 +184,7 @@ const BENCHMARK_MODELS: BenchmarkEntry[] = [
     },
     {
         key: 'model_5_attrition_mlp',
-        name: 'Employee Attrition — MLP Neural Network',
+        name: 'Employee Attrition Predictor',
         description: 'Predicts employee attrition (Attrition_binary). Trained on 1 470 IBM HR records.',
         domain: 'employment',
         target_column: 'Attrition_binary',
@@ -196,7 +196,7 @@ const BENCHMARK_MODELS: BenchmarkEntry[] = [
     },
     {
         key: 'model_6_student_decision_tree',
-        name: 'Student Pass/Fail — Decision Tree',
+        name: 'Student Pass/Fail Predictor',
         description: 'Predicts student pass/fail outcome (pass_fail). Trained on 395 Portuguese student records.',
         domain: 'education',
         target_column: 'pass_fail',
