@@ -17,6 +17,7 @@ import {
   TableRow,
   Paper,
   LinearProgress,
+  useTheme,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -87,6 +88,7 @@ interface TransparencyData {
 }
 
 export default function TransparencyDetailPage() {
+  const theme = useTheme();
   const { validationId } = useParams<{ validationId: string }>();
   const navigate = useNavigate();
 
@@ -361,74 +363,139 @@ export default function TransparencyDetailPage() {
                   <Typography variant="h6">Model Performance</Typography>
                 </Box>
 
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                  <Box sx={{ flex: "1 1 45%", minWidth: 120 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2,
-                        bgcolor: "success.lighter",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Typography variant="h4" color="success.main">
-                        {(metrics.accuracy * 100).toFixed(1)}%
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Accuracy
-                      </Typography>
-                    </Paper>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", md: "row" },
+                    gap: 3,
+                    alignItems: "center",
+                  }}
+                >
+                  {/* Chart representation */}
+                  <Box sx={{ flex: "1 1 50%", width: "100%", height: 180 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: "Accuracy", value: metrics.accuracy * 100, color: theme.palette.success.main },
+                          { name: "Precision", value: metrics.precision * 100, color: theme.palette.info.main },
+                          { name: "Recall", value: metrics.recall * 100, color: theme.palette.warning.main },
+                          { name: "F1-Score", value: metrics.f1_score * 100, color: theme.palette.secondary.main },
+                        ]}
+                        margin={{ top: 10, right: 5, left: -25, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                        <XAxis dataKey="name" tick={{ fill: theme.palette.text.secondary, fontSize: 11 }} tickLine={false} axisLine={false} />
+                        <YAxis domain={[0, 100]} tick={{ fill: theme.palette.text.secondary, fontSize: 11 }} tickLine={false} axisLine={false} />
+                        <Tooltip
+                          cursor={{ fill: theme.palette.action.hover }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <Paper sx={{ p: 1, border: `1px solid ${theme.palette.divider}` }}>
+                                  <Typography variant="body2" fontWeight="bold" sx={{ color: data.color }}>
+                                    {data.name}: {data.value.toFixed(1)}%
+                                  </Typography>
+                                </Paper>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={30}>
+                          {
+                            [
+                              theme.palette.success.main,
+                              theme.palette.info.main,
+                              theme.palette.warning.main,
+                              theme.palette.secondary.main
+                            ].map((color, index) => (
+                              <Cell key={`cell-${index}`} fill={color} />
+                            ))
+                          }
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
                   </Box>
-                  <Box sx={{ flex: "1 1 45%", minWidth: 120 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2,
-                        bgcolor: "info.lighter",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Typography variant="h4" color="info.main">
-                        {(metrics.precision * 100).toFixed(1)}%
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Precision
-                      </Typography>
-                    </Paper>
-                  </Box>
-                  <Box sx={{ flex: "1 1 45%", minWidth: 120 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2,
-                        bgcolor: "warning.lighter",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Typography variant="h4" color="warning.main">
-                        {(metrics.recall * 100).toFixed(1)}%
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Recall
-                      </Typography>
-                    </Paper>
-                  </Box>
-                  <Box sx={{ flex: "1 1 45%", minWidth: 120 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2,
-                        bgcolor: "secondary.lighter",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Typography variant="h4" color="secondary.main">
-                        {(metrics.f1_score * 100).toFixed(1)}%
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        F1-Score
-                      </Typography>
-                    </Paper>
+
+                  {/* Grid representation */}
+                  <Box sx={{ flex: "1 1 50%", display: "flex", flexWrap: "wrap", gap: 1.5, width: "100%" }}>
+                    <Box sx={{ flex: "1 1 40%", minWidth: 100 }}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          bgcolor: theme.palette.mode === "dark" ? "rgba(46, 125, 50, 0.15)" : "success.lighter",
+                          border: `1px solid ${theme.palette.mode === "dark" ? "rgba(46, 125, 50, 0.3)" : "transparent"}`,
+                          textAlign: "center",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Typography variant="h5" color="success.main" fontWeight="bold">
+                          {(metrics.accuracy * 100).toFixed(1)}%
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Accuracy
+                        </Typography>
+                      </Paper>
+                    </Box>
+                    <Box sx={{ flex: "1 1 40%", minWidth: 100 }}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          bgcolor: theme.palette.mode === "dark" ? "rgba(2, 136, 209, 0.15)" : "info.lighter",
+                          border: `1px solid ${theme.palette.mode === "dark" ? "rgba(2, 136, 209, 0.3)" : "transparent"}`,
+                          textAlign: "center",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Typography variant="h5" color="info.main" fontWeight="bold">
+                          {(metrics.precision * 100).toFixed(1)}%
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Precision
+                        </Typography>
+                      </Paper>
+                    </Box>
+                    <Box sx={{ flex: "1 1 40%", minWidth: 100 }}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          bgcolor: theme.palette.mode === "dark" ? "rgba(237, 108, 2, 0.15)" : "warning.lighter",
+                          border: `1px solid ${theme.palette.mode === "dark" ? "rgba(237, 108, 2, 0.3)" : "transparent"}`,
+                          textAlign: "center",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Typography variant="h5" color="warning.main" fontWeight="bold">
+                          {(metrics.recall * 100).toFixed(1)}%
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Recall
+                        </Typography>
+                      </Paper>
+                    </Box>
+                    <Box sx={{ flex: "1 1 40%", minWidth: 100 }}>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 1.5,
+                          bgcolor: theme.palette.mode === "dark" ? "rgba(156, 39, 176, 0.15)" : "secondary.lighter",
+                          border: `1px solid ${theme.palette.mode === "dark" ? "rgba(156, 39, 176, 0.3)" : "transparent"}`,
+                          textAlign: "center",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Typography variant="h5" color="secondary.main" fontWeight="bold">
+                          {(metrics.f1_score * 100).toFixed(1)}%
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          F1-Score
+                        </Typography>
+                      </Paper>
+                    </Box>
                   </Box>
                 </Box>
               </CardContent>

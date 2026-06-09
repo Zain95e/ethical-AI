@@ -22,10 +22,10 @@ docker push zynalex9/ethical-ai-frontend:latest
 Optional versioned release:
 
 ```bash
-docker tag zynalex9/ethical-ai-backend:latest zynalex9/ethical-ai-backend:v1.0.0
-docker tag zynalex9/ethical-ai-frontend:latest zynalex9/ethical-ai-frontend:v1.0.0
-docker push zynalex9/ethical-ai-backend:v1.0.0
-docker push zynalex9/ethical-ai-frontend:v1.0.0
+docker tag zynalex9/ethical-ai-backend:latest zynalex9/ethical-ai-backend:v1.1.0
+docker tag zynalex9/ethical-ai-frontend:latest zynalex9/ethical-ai-frontend:v1.1.0
+docker push zynalex9/ethical-ai-backend:v1.1.0
+docker push zynalex9/ethical-ai-frontend:v1.1.0
 ```
 
 ## B) Client: run the platform

@@ -1427,6 +1427,66 @@ async def get_suite_results(
                 except Exception:
                     pass  # Non-fatal – basic data still returned
 
+            # Fallback: load transparency artifacts if Celery result is unavailable/expired
+            if transparency_data.get("model_card") is None and transparency_val.mlflow_run_id:
+                try:
+                    import json
+                    import os
+                    from ..config import settings
+
+                    artifact_base = os.path.join(
+                        settings.mlflow_artifact_location,
+                        "1",
+                        transparency_val.mlflow_run_id,
+                        "artifacts"
+                    )
+
+                    # 1. Model Card
+                    model_card_path = os.path.join(artifact_base, "model_card.json")
+                    if os.path.exists(model_card_path):
+                        with open(model_card_path, "r", encoding="utf-8") as f:
+                            transparency_data["model_card"] = json.load(f)
+
+                    # 2. Feature Importance / Global Importance
+                    feat_imp_path = os.path.join(artifact_base, "feature_importance.json")
+                    if os.path.exists(feat_imp_path):
+                        with open(feat_imp_path, "r", encoding="utf-8") as f:
+                            transparency_data["global_importance"] = json.load(f)
+
+                    # 3. Sample Predictions
+                    sample_pred_path = os.path.join(artifact_base, "sample_predictions.json")
+                    if os.path.exists(sample_pred_path):
+                        with open(sample_pred_path, "r", encoding="utf-8") as f:
+                            sample_data = json.load(f)
+                            transparency_data["sample_predictions"] = sample_data.get("samples")
+                            if "warning" in sample_data:
+                                transparency_data["warning"] = sample_data.get("warning")
+
+                    # 4. LIME Explanations
+                    lime_path = os.path.join(artifact_base, "lime_explanations.json")
+                    if os.path.exists(lime_path):
+                        with open(lime_path, "r", encoding="utf-8") as f:
+                            lime_data = json.load(f)
+                            transparency_data["lime_explanations"] = lime_data.get("lime_explanations")
+
+                    # 5. Explanation Fidelity from MLflow metrics
+                    fidelity_path = os.path.join(
+                        settings.mlflow_artifact_location,
+                        "1",
+                        transparency_val.mlflow_run_id,
+                        "metrics",
+                        "explanation_fidelity"
+                    )
+                    if os.path.exists(fidelity_path):
+                        with open(fidelity_path, "r", encoding="utf-8") as f:
+                            lines = f.readlines()
+                            if lines:
+                                last_line = lines[-1].strip().split()
+                                if len(last_line) >= 2:
+                                    transparency_data["explanation_fidelity"] = float(last_line[1])
+                except Exception as e:
+                    logger.error("Failed to load transparency fallback details: %s", e)
+
             response["validations"]["transparency"] = transparency_data
     
     # Get privacy validation
