@@ -1383,15 +1383,13 @@ export default function ProjectDetailPage() {
                 projectId={id!}
                 existingModelNames={(models ?? []).map((m: MLModel) => m.name)}
                 existingDatasetNames={(datasets ?? []).map((d: Dataset) => d.name)}
-                onSuccess={(name, type) => {
+                onSuccess={(_, type) => {
                     if (type === 'model') {
                         queryClient.invalidateQueries({ queryKey: ['models', id] });
                         queryClient.invalidateQueries({ queryKey: ['project', id] });
-                        alert(`Successfully imported model: ${name}`);
                     } else {
                         queryClient.invalidateQueries({ queryKey: ['datasets', id] });
                         queryClient.invalidateQueries({ queryKey: ['project', id] });
-                        alert(`Successfully imported dataset: ${name}`);
                     }
                 }}
             />

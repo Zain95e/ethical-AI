@@ -15,14 +15,25 @@ import {
     Paper,
 } from '@mui/material';
 
+interface ConfusionMatrixEntry {
+    tp: number;
+    fp: number;
+    tn: number;
+    fn: number;
+    accuracy: number;
+    tpr: number;
+    fpr: number;
+}
+
 interface FairnessMetricRow {
     metric_name: string;
-    metric_value: number;
-    threshold: number;
+    metric_value: number | null;
+    threshold: number | null;
     passed: boolean;
     details?: {
         description?: string;
         by_group?: Record<string, number | { tpr?: number; fpr?: number }>;
+        [key: string]: unknown;
     };
 }
 
@@ -81,8 +92,16 @@ const METRIC_DEFINITIONS: Record<string, FairnessMetricDefinition> = {
         definition: 'Absolute difference in positive prediction rates between groups.',
         thresholdText: '<= 0.10',
         failMeaning: 'Selection rates are too far apart across groups.',
-        remediation: 'Apply pre-processing balancing and retrain with fairness constraints.',
+        remediation: 'Apply pre-processing balancing and retrain with fairness controls.',
         higherIsBetter: false,
+    },
+    group_confusion_matrices: {
+        title: 'Group Confusion Matrices',
+        definition: 'Per-group confusion matrices showing TP, FP, TN, and FN counts for each demographic group.',
+        thresholdText: 'N/A (informational)',
+        failMeaning: '',
+        remediation: 'Review per-group error rates and adjust decision thresholds to balance performance across groups.',
+        higherIsBetter: true,
     },
 };
 
@@ -124,10 +143,23 @@ export default function FairnessMetricDetail({
         higherIsBetter: true,
     };
 
+    const isConfusionMatrix = metric.metric_name === 'group_confusion_matrices';
+
+    const confusionGroups: Record<string, ConfusionMatrixEntry> = isConfusionMatrix && metric.details
+        ? Object.fromEntries(
+            Object.entries(metric.details)
+                .filter(([, v]) => v != null && typeof v === 'object' && 'tp' in (v as object))
+                .map(([k, v]) => [k, v as ConfusionMatrixEntry])
+        )
+        : {};
+
     const byGroup = metric.details?.by_group || {};
     const hasByGroup = Object.keys(byGroup).length > 0;
+    const hasConfusionGroups = Object.keys(confusionGroups).length > 0;
 
-    const whyText = metric.passed
+    const whyText = isConfusionMatrix
+        ? 'Confusion matrices are computed per demographic group and are always informational.'
+        : metric.passed
         ? `This metric passed: ${thresholdComparisonText(metric, def)}.`
         : metric.details?.description || `${def.failMeaning} (${thresholdComparisonText(metric, def)}).`;
 
@@ -142,15 +174,17 @@ export default function FairnessMetricDetail({
                     </Box>
 
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
-                        <Typography variant="body2"><strong>Your Value:</strong> {metric.metric_value?.toFixed(3)}</Typography>
+                        <Typography variant="body2"><strong>Your Value:</strong> {metric.metric_value != null ? metric.metric_value.toFixed(3) : '—'}</Typography>
                         <Typography variant="body2"><strong>Threshold:</strong> {def.thresholdText}</Typography>
                         <Chip label={metric.passed ? 'Pass' : 'Fail'} color={metric.passed ? 'success' : 'error'} size="small" />
                     </Box>
 
-                    <Box>
-                        <Typography variant="subtitle2" color="text.secondary">Why {metric.passed ? 'it passed' : 'it failed'}</Typography>
-                        <Typography variant="body2">{whyText}</Typography>
-                    </Box>
+                    {!isConfusionMatrix && (
+                        <Box>
+                            <Typography variant="subtitle2" color="text.secondary">Why {metric.passed ? 'it passed' : 'it failed'}</Typography>
+                            <Typography variant="body2">{whyText}</Typography>
+                        </Box>
+                    )}
 
                     <Box>
                         <Typography variant="subtitle2" color="text.secondary">What to do</Typography>
@@ -159,7 +193,38 @@ export default function FairnessMetricDetail({
 
                     <Box>
                         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>Per-group breakdown</Typography>
-                        {hasByGroup ? (
+                        {hasConfusionGroups ? (
+                            <Paper variant="outlined">
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Group</TableCell>
+                                            <TableCell align="right">TP</TableCell>
+                                            <TableCell align="right">FP</TableCell>
+                                            <TableCell align="right">TN</TableCell>
+                                            <TableCell align="right">FN</TableCell>
+                                            <TableCell align="right">Accuracy</TableCell>
+                                            <TableCell align="right">TPR</TableCell>
+                                            <TableCell align="right">FPR</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {Object.entries(confusionGroups).map(([group, cm]) => (
+                                            <TableRow key={group}>
+                                                <TableCell>{group}</TableCell>
+                                                <TableCell align="right">{cm.tp}</TableCell>
+                                                <TableCell align="right">{cm.fp}</TableCell>
+                                                <TableCell align="right">{cm.tn}</TableCell>
+                                                <TableCell align="right">{cm.fn}</TableCell>
+                                                <TableCell align="right">{(cm.accuracy * 100).toFixed(1)}%</TableCell>
+                                                <TableCell align="right">{cm.tpr.toFixed(3)}</TableCell>
+                                                <TableCell align="right">{cm.fpr.toFixed(3)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Paper>
+                        ) : hasByGroup ? (
                             <Paper variant="outlined">
                                 <Table size="small">
                                     <TableHead>
