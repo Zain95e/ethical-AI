@@ -36,115 +36,139 @@ class BenchmarkDatasetSeeder:
     # Absolute path to the locally trained datasets (processed versions)
     _BASE = Path(__file__).resolve().parent.parent.parent / "dataset-models" / "datasets" / "processed"
 
-    # Dataset metadata configuration – 6 locally trained datasets
+    # Dataset metadata configuration – 5 locally trained datasets
     BENCHMARK_DATASETS: Dict[str, Dict] = {
         "adult_income": {
-            "name": "Adult Income",
+            "name": "Adult Income — for Adult Income Predictor (HistGradientBoosting)",
             "description": (
-                "Census data predicting whether an adult earns >$50K/year. "
-                "Classic fairness benchmark for Finance / Social Policy. "
-                "Trained with Logistic Regression (StandardScaler pipeline). "
-                "Accuracy: 82.3 %  |  Sensitive attribute: sex"
+                "Paired model: Adult Income Predictor | Algorithm: HistGradientBoosting. "
+                "UCI Census Income dataset — 32 561 US adults from the 1994 census. "
+                "TARGET COLUMN: income_binary (0 = earns <=50K/year, 1 = earns >50K/year). "
+                "SENSITIVE FEATURE: sex (values: Male, Female). "
+                "Other quasi-identifiers: age, marital_enc, occupation_enc. "
+                "Accuracy: 82.7% | AUC-ROC: 0.922. "
+                "BIAS WARNING: Known gender pay gap — women predicted to earn >50K at "
+                "roughly half the rate of men. Demographic parity and equal opportunity "
+                "metrics will likely FAIL. Use this dataset to demonstrate how the platform "
+                "detects real-world gender bias encoded in historical data."
             ),
             "filename": "adult_income_processed.csv",
             "target_column": "income_binary",
             "sensitive_attributes": ["sex"],
-            "key_features": ["age", "education_num", "hours_per_week", "capital_gain", "capital_loss", "sex_encoded", "fnlwgt"],
+            "key_features": ["age", "education.num", "hours.per.week", "capital.gain", "capital.loss", "fnlwgt", "sex_encoded", "workclass_enc", "marital_enc", "occupation_enc"],
             "domain": "finance",
-            "reference": "UCI Adult / Census Income Dataset (30 162 rows)",
-            "model_key": "model_1_income_logreg",
-            "model_type": "Logistic Regression",
-            "accuracy": 0.8228,
+            "reference": "UCI Adult / Census Income Dataset (32 561 rows)",
+            "model_key": "model_1_income_hgbm",
+            "model_type": "HistGradientBoosting",
+            "accuracy": 0.8268,
+            "bias_level": "HIGH",
         },
         "credit_default": {
-            "name": "Credit Card Default",
+            "name": "Credit Card Default — for Credit Default Classifier (Random Forest)",
             "description": (
-                "Taiwan credit-card dataset predicting payment default. "
-                "Tests gender-based fairness in Banking / Credit Risk. "
-                "Trained with Random Forest (150 trees, max_depth=8). "
-                "Accuracy: 81.9 %  |  Sensitive attribute: SEX_label"
+                "Paired model: Credit Card Default Classifier | Algorithm: Random Forest (300 trees). "
+                "Taiwan credit-card payment data — 30 000 clients, full 6-month payment history. "
+                "TARGET COLUMN: default (0 = paid on time, 1 = defaulted next month). "
+                "SENSITIVE FEATURE: SEX_label (values: Male, Female). "
+                "Other quasi-identifiers: AGE, EDUCATION, MARRIAGE. "
+                "Payment history columns: PAY_0 to PAY_6 (-1=paid early, 0=on time, 1-9=months late). "
+                "Bill amounts: BILL_AMT1-6. Payment amounts: PAY_AMT1-6. "
+                "Accuracy: 77.3% | AUC-ROC: 0.776. "
+                "BIAS NOTE: Model relies on payment behaviour, not demographics. "
+                "Gender has very low feature importance (confirmed by SHAP). "
+                "Fairness metrics typically PASS — good example of a relatively fair model."
             ),
             "filename": "credit_default_processed.csv",
             "target_column": "default",
             "sensitive_attributes": ["SEX_label"],
-            "key_features": ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", "BILL_AMT1", "PAY_AMT1"],
+            "key_features": ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6", "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", "BILL_AMT6", "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6"],
             "domain": "finance",
             "reference": "UCI Default of Credit Card Clients Dataset (30 000 rows)",
-            "model_key": "model_2_credit_random_forest",
+            "model_key": "model_2_credit_rf",
             "model_type": "Random Forest",
-            "accuracy": 0.8185,
+            "accuracy": 0.7732,
+            "bias_level": "LOW",
         },
         "compas_recidivism": {
-            "name": "Recidivism Risk",
+            "name": "COMPAS Recidivism — for Recidivism Risk Assessor (Logistic Regression)",
             "description": (
-                "COMPAS recidivism dataset predicting 2-year reoffending risk. "
-                "Replicates the algorithm studied for racial bias in Criminal Justice. "
-                "Trained with Gradient Boosting (200 estimators, lr=0.05). "
-                "Accuracy: 68.8 %  |  Sensitive attribute: race"
+                "Paired model: Recidivism Risk Assessor | Algorithm: Logistic Regression (ElasticNet). "
+                "ProPublica COMPAS dataset — 6 172 Florida defendants, 2013-2014. "
+                "TARGET COLUMN: Two_yr_Recidivism (0 = did not reoffend, 1 = reoffended within 2 years). "
+                "SENSITIVE FEATURE: race (values: African-American, Caucasian, Hispanic, Asian, Native American, Other). "
+                "Other sensitive attribute: Female (0=Male, 1=Female). "
+                "Features: Number_of_Priors, Age_Above_FourtyFive, Age_Below_TwentyFive, Misdemeanor, score_factor. "
+                "Accuracy: 67.6% | AUC-ROC: 0.737. "
+                "DOCUMENTED RACIAL BIAS: African-Americans represent 51.4% of dataset and are "
+                "flagged for recidivism at significantly higher rates. This is the dataset behind "
+                "ProPublica's 2016 investigation 'Machine Bias'. "
+                "Fairness metrics on race will FAIL. This is intentional — use it to show the "
+                "platform detecting documented real-world algorithmic discrimination."
             ),
             "filename": "compas_recidivism_processed.csv",
-            "target_column": "two_year_recid",
+            "target_column": "Two_yr_Recidivism",
             "sensitive_attributes": ["race"],
-            "key_features": ["age", "sex_enc", "juv_fel_count", "juv_misd_count", "juv_other_count", "priors_count", "charge_enc"],
+            "key_features": ["Number_of_Priors", "Age_Above_FourtyFive", "Age_Below_TwentyFive", "Female", "Misdemeanor", "score_factor"],
             "domain": "criminal_justice",
-            "reference": "ProPublica COMPAS Analysis (2016) – 7 214 rows",
-            "model_key": "model_3_recidivism_gbm",
-            "model_type": "Gradient Boosting",
-            "accuracy": 0.6881,
+            "reference": "ProPublica COMPAS Analysis 2016 — 6 172 rows",
+            "model_key": "model_3_recidivism_logreg",
+            "model_type": "Logistic Regression",
+            "accuracy": 0.6761,
+            "bias_level": "CRITICAL",
         },
         "heart_disease": {
-            "name": "Heart Disease",
+            "name": "Heart Disease — for Heart Disease Detector (Gradient Boosting)",
             "description": (
-                "Cleveland Heart Disease dataset detecting cardiac disease presence. "
-                "Tests sex and age disparities in Healthcare / Medical Diagnosis. "
-                "Trained with SVM (RBF kernel, StandardScaler pipeline). "
-                "Accuracy: 86.7 %  |  Sensitive attribute: sex_label"
+                "Paired model: Heart Disease Detector | Algorithm: Gradient Boosting (300 trees, depth=3). "
+                "Cleveland Heart Disease dataset — 299 patients from the UCI repository. "
+                "TARGET COLUMN: target (0 = no cardiac disease, 1 = disease present). "
+                "SENSITIVE FEATURE: sex_label (values: Male, Female). "
+                "Other quasi-identifiers: age, age_group (Under40/40-55/55-70/Over70). "
+                "Clinical features: cp (chest pain type), trestbps (resting BP), chol (cholesterol), "
+                "thalch (max heart rate), exang (exercise-induced angina), oldpeak, ca, thal. "
+                "Accuracy: 81.7% | AUC-ROC: 0.897. "
+                "BIAS NOTE: Heart disease has real clinical sex differences — symptoms present "
+                "differently in men and women. Expect mixed fairness results: some metrics may pass, "
+                "others may flag sex-based detection disparities. Small dataset (299 rows) — "
+                "results may have higher variance."
             ),
             "filename": "heart_disease_processed.csv",
             "target_column": "target",
             "sensitive_attributes": ["sex_label"],
             "key_features": ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalch", "exang", "oldpeak", "slope", "ca", "thal"],
             "domain": "healthcare",
-            "reference": "UCI Heart Disease Dataset (299 rows)",
-            "model_key": "model_4_heart_svm",
-            "model_type": "SVM (RBF kernel)",
-            "accuracy": 0.8667,
+            "reference": "UCI Heart Disease Dataset — Cleveland (299 rows)",
+            "model_key": "model_4_heart_gbm",
+            "model_type": "Gradient Boosting",
+            "accuracy": 0.8167,
+            "bias_level": "MEDIUM",
         },
         "ibm_hr_attrition": {
-            "name": "Employee Attrition",
+            "name": "IBM HR Attrition — for Employee Attrition Predictor (MLP Neural Network)",
             "description": (
-                "IBM HR Analytics dataset predicting employee attrition. "
-                "Tests gender and age fairness in HR / People Analytics. "
-                "Trained with MLP Neural Network (128→64→32 ReLU, StandardScaler pipeline). "
-                "Accuracy: 86.7 %  |  Sensitive attribute: Gender"
+                "Paired model: Employee Attrition Predictor | Algorithm: MLP Neural Network (256→128→64→32). "
+                "IBM HR Analytics synthetic dataset — 1 470 employees. "
+                "TARGET COLUMN: Attrition_binary (0 = employee stayed, 1 = employee left). "
+                "SENSITIVE FEATURE: Gender (values: Male, Female). "
+                "Other quasi-identifiers: Age, MaritalStatus, Department. "
+                "Key features: MonthlyIncome, OverTime_enc, JobSatisfaction, YearsAtCompany, "
+                "WorkLifeBalance, JobLevel, TotalWorkingYears. "
+                "Accuracy: 86.7% | AUC-ROC: 0.764. "
+                "BIAS NOTE: Synthetic dataset — IBM designed it to be relatively balanced. "
+                "Only ~16% attrition rate (class imbalance handled with balanced class weights). "
+                "Fairness metrics typically PASS on gender. "
+                "Good baseline for demonstrating what a FAIR model looks like in contrast to COMPAS."
             ),
             "filename": "ibm_hr_attrition_processed.csv",
             "target_column": "Attrition_binary",
             "sensitive_attributes": ["Gender"],
-            "key_features": ["Age", "DailyRate", "DistanceFromHome", "Education", "EnvironmentSatisfaction", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome", "NumCompaniesWorked", "OverTime_enc", "PerformanceRating", "RelationshipSatisfaction", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion"],
+            "key_features": ["Age", "DailyRate", "DistanceFromHome", "Education", "EnvironmentSatisfaction", "Gender_enc", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome", "NumCompaniesWorked", "OverTime_enc", "PerformanceRating", "RelationshipSatisfaction", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion"],
             "domain": "employment",
             "reference": "IBM HR Analytics Employee Attrition Dataset (1 470 rows)",
             "model_key": "model_5_attrition_mlp",
             "model_type": "MLP Neural Network",
             "accuracy": 0.8673,
-        },
-        "student_performance": {
-            "name": "Student Pass/Fail",
-            "description": (
-                "Portuguese student performance dataset predicting pass/fail outcomes. "
-                "Tests gender and urban/rural fairness in Education / Academic Performance. "
-                "Trained with Decision Tree (max_depth=6, balanced class weights). "
-                "Accuracy: 82.3 %  |  Sensitive attribute: sex"
-            ),
-            "filename": "student_performance_processed.csv",
-            "target_column": "pass_fail",
-            "sensitive_attributes": ["sex"],
-            "key_features": ["age", "sex_enc", "address_enc", "Medu", "Fedu", "traveltime", "studytime", "failures", "famsup_enc", "paid_enc", "internet_enc", "romantic_enc", "higher_enc", "freetime", "goout", "Dalc", "Walc", "health", "absences", "G1", "G2"],
-            "domain": "education",
-            "reference": "UCI Student Performance Dataset (395 rows)",
-            "model_key": "model_6_student_decision_tree",
-            "model_type": "Decision Tree",
-            "accuracy": 0.8228,
+            "bias_level": "LOW",
         },
     }
     

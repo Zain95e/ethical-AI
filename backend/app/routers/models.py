@@ -338,107 +338,126 @@ async def delete_model(
 _MODELS_BASE = Path(__file__).resolve().parent.parent.parent / "dataset-models" / "trained_models"
 
 BENCHMARK_MODELS = {
-    "model_1_income_logreg": {
+    "model_1_income_hgbm": {
         "name": "Adult Income Predictor",
         "description": (
-            "Predicts whether an adult earns >$50K/year (income_binary). "
-            "Trained on 30 162 census records. "
-            "Accuracy: 82.3 %  |  Sensitive: sex  |  Domain: Finance / Social Policy"
+            "Algorithm: HistGradientBoosting (400 iter, lr=0.05, depth=6, balanced). "
+            "Predicts whether a US adult earns >$50K/year. "
+            "Trained on 32 561 census records (UCI Adult Dataset). "
+            "Accuracy: 82.7% | AUC-ROC: 0.922 | CV AUC: 0.925 +/- 0.002. "
+            "Target column: income_binary (0 = <=50K, 1 = >50K). "
+            "Sensitive feature: sex (Male / Female). "
+            "Bias warning: Known gender bias — women are predicted to earn >$50K at roughly half the rate of men, "
+            "reflecting real-world wage gap patterns in the 1994 census data. "
+            "Expect fairness metrics (demographic parity, equal opportunity) to flag this dataset."
         ),
-        "filename": "model_1_income_logreg.pkl",
+        "filename": "model_1_income_hgbm.joblib",
         "model_type": "sklearn",
         "target_column": "income_binary",
         "sensitive_attributes": ["sex"],
-        "feature_columns": ["age", "education_num", "hours_per_week", "capital_gain", "capital_loss", "sex_encoded", "fnlwgt"],
+        "feature_columns": ["age", "education.num", "hours.per.week", "capital.gain", "capital.loss", "fnlwgt", "sex_encoded", "workclass_enc", "marital_enc", "occupation_enc"],
         "domain": "Finance / Social Policy",
-        "accuracy": 0.8228,
-        "algorithm": "Logistic Regression (StandardScaler pipeline)",
+        "accuracy": 0.8268,
+        "auc_roc": 0.9224,
+        "algorithm": "HistGradientBoostingClassifier",
         "dataset_key": "adult_income",
     },
-    "model_2_credit_random_forest": {
+    "model_2_credit_rf": {
         "name": "Credit Card Default Classifier",
         "description": (
-            "Predicts credit card payment default (default). "
-            "Trained on 30 000 Taiwan credit records. "
-            "Accuracy: 81.9 %  |  Sensitive: SEX_label  |  Domain: Banking / Credit Risk"
+            "Algorithm: Random Forest (300 trees, depth=10, balanced class weights). "
+            "Predicts whether a credit card client will default next month. "
+            "Trained on 30 000 Taiwan credit records using full 6-month payment history. "
+            "Accuracy: 77.3% | AUC-ROC: 0.776 | CV AUC: 0.783 +/- 0.005. "
+            "Target column: default (0 = paid, 1 = defaulted). "
+            "Sensitive feature: SEX_label (Male / Female). "
+            "Bias note: Model primarily uses payment history (PAY_0-PAY_6). "
+            "Gender (SEX) has low feature importance — fairness metrics typically pass. "
+            "Good example of a relatively unbiased financial model."
         ),
-        "filename": "model_2_credit_random_forest.joblib",
+        "filename": "model_2_credit_rf.joblib",
         "model_type": "sklearn",
         "target_column": "default",
         "sensitive_attributes": ["SEX_label"],
-        "feature_columns": ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", "BILL_AMT1", "PAY_AMT1"],
+        "feature_columns": ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6", "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", "BILL_AMT6", "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6"],
         "domain": "Banking / Credit Risk",
-        "accuracy": 0.8185,
-        "algorithm": "Random Forest (150 trees, max_depth=8)",
+        "accuracy": 0.7732,
+        "auc_roc": 0.7764,
+        "algorithm": "Random Forest",
         "dataset_key": "credit_default",
     },
-    "model_3_recidivism_gbm": {
+    "model_3_recidivism_logreg": {
         "name": "Recidivism Risk Assessor",
         "description": (
-            "Predicts 2-year recidivism risk (two_year_recid). "
-            "Trained on 7 214 COMPAS records. "
-            "Accuracy: 68.8 %  |  Sensitive: race  |  Domain: Criminal Justice"
+            "Algorithm: Logistic Regression with ElasticNet regularisation (L1+L2, C=0.5, balanced). "
+            "Interpretable model intentionally chosen for high-stakes criminal justice decisions. "
+            "Predicts 2-year reoffending risk using ProPublica COMPAS dataset. "
+            "Trained on 6 172 defendant records. "
+            "Accuracy: 67.6% | AUC-ROC: 0.737 | CV AUC: 0.731 +/- 0.023. "
+            "Target column: Two_yr_Recidivism (0 = did not reoffend, 1 = reoffended within 2 years). "
+            "Sensitive feature: race (African-American / Caucasian / Hispanic / Asian / Other). "
+            "Bias warning: DOCUMENTED RACIAL BIAS — African-Americans make up 51.4% of this dataset "
+            "and are flagged at significantly higher rates. This is the dataset behind ProPublica's "
+            "landmark 2016 investigation 'Machine Bias'. Expect fairness metrics to FAIL on race."
         ),
-        "filename": "model_3_recidivism_gbm.pkl",
+        "filename": "model_3_recidivism_logreg.pkl",
         "model_type": "sklearn",
-        "target_column": "two_year_recid",
+        "target_column": "Two_yr_Recidivism",
         "sensitive_attributes": ["race"],
-        "feature_columns": ["age", "sex_enc", "juv_fel_count", "juv_misd_count", "juv_other_count", "priors_count", "charge_enc"],
+        "feature_columns": ["Number_of_Priors", "Age_Above_FourtyFive", "Age_Below_TwentyFive", "Female", "Misdemeanor", "score_factor"],
         "domain": "Criminal Justice",
-        "accuracy": 0.6881,
-        "algorithm": "Gradient Boosting (200 estimators, lr=0.05)",
+        "accuracy": 0.6761,
+        "auc_roc": 0.7368,
+        "algorithm": "Logistic Regression (ElasticNet)",
         "dataset_key": "compas_recidivism",
     },
-    "model_4_heart_svm": {
+    "model_4_heart_gbm": {
         "name": "Heart Disease Detector",
         "description": (
-            "Detects cardiac disease presence (target). "
-            "Trained on 299 Cleveland Heart Disease records. "
-            "Accuracy: 86.7 %  |  Sensitive: sex_label  |  Domain: Healthcare / Medical Diagnosis"
+            "Algorithm: Gradient Boosting (300 shallow trees, depth=3, lr=0.05, subsample=0.8). "
+            "Detects presence of cardiac disease from clinical measurements. "
+            "Trained on 299 Cleveland Heart Disease records (UCI). "
+            "Accuracy: 81.7% | AUC-ROC: 0.897 | CV AUC: 0.894 +/- 0.026. "
+            "Target column: target (0 = no disease, 1 = disease present). "
+            "Sensitive feature: sex_label (Male / Female). "
+            "Bias note: Heart disease has known clinical sex differences — symptoms and presentation "
+            "differ between men and women. Mixed fairness results expected: some metrics may pass, "
+            "others may flag sex-based disparities in detection rates."
         ),
-        "filename": "model_4_heart_svm.pkl",
+        "filename": "model_4_heart_gbm.pkl",
         "model_type": "sklearn",
         "target_column": "target",
         "sensitive_attributes": ["sex_label"],
         "feature_columns": ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalch", "exang", "oldpeak", "slope", "ca", "thal"],
         "domain": "Healthcare / Medical Diagnosis",
-        "accuracy": 0.8667,
-        "algorithm": "SVM (RBF kernel, probability=True, StandardScaler pipeline)",
+        "accuracy": 0.8167,
+        "auc_roc": 0.8973,
+        "algorithm": "Gradient Boosting",
         "dataset_key": "heart_disease",
     },
     "model_5_attrition_mlp": {
         "name": "Employee Attrition Predictor",
         "description": (
-            "Predicts employee attrition (Attrition_binary). "
-            "Trained on 1 470 IBM HR records. "
-            "Accuracy: 86.7 %  |  Sensitive: Gender  |  Domain: HR / People Analytics"
+            "Algorithm: MLP Neural Network (256→128→64→32 ReLU, L2 alpha=0.01, adaptive LR, early stopping). "
+            "Predicts whether an employee will leave the company. "
+            "Trained on 1 470 IBM HR Analytics records. "
+            "Accuracy: 86.7% | AUC-ROC: 0.764 | CV AUC: 0.740 +/- 0.098. "
+            "Target column: Attrition_binary (0 = stayed, 1 = left). "
+            "Sensitive feature: Gender (Male / Female). "
+            "Bias note: IBM's dataset is synthetic and relatively balanced by gender — "
+            "fairness metrics typically pass. Good baseline for demonstrating a fair model. "
+            "Note: Only 16% of employees leave (class imbalance), so class_weight=balanced was applied."
         ),
         "filename": "model_5_attrition_mlp.pkl",
         "model_type": "sklearn",
         "target_column": "Attrition_binary",
         "sensitive_attributes": ["Gender"],
-        "feature_columns": ["Age", "DailyRate", "DistanceFromHome", "Education", "EnvironmentSatisfaction", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome", "NumCompaniesWorked", "OverTime_enc", "PerformanceRating", "RelationshipSatisfaction", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion"],
+        "feature_columns": ["Age", "DailyRate", "DistanceFromHome", "Education", "EnvironmentSatisfaction", "Gender_enc", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome", "NumCompaniesWorked", "OverTime_enc", "PerformanceRating", "RelationshipSatisfaction", "TotalWorkingYears", "TrainingTimesLastYear", "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion"],
         "domain": "HR / People Analytics",
         "accuracy": 0.8673,
-        "algorithm": "MLP Neural Network (128→64→32 ReLU, StandardScaler pipeline)",
+        "auc_roc": 0.7635,
+        "algorithm": "MLP Neural Network",
         "dataset_key": "ibm_hr_attrition",
-    },
-    "model_6_student_decision_tree": {
-        "name": "Student Pass/Fail Predictor",
-        "description": (
-            "Predicts student pass/fail outcome (pass_fail). "
-            "Trained on 395 Portuguese student records. "
-            "Accuracy: 82.3 %  |  Sensitive: sex  |  Domain: Education / Academic Performance"
-        ),
-        "filename": "model_6_student_decision_tree.pkl",
-        "model_type": "sklearn",
-        "target_column": "pass_fail",
-        "sensitive_attributes": ["sex"],
-        "feature_columns": ["age", "sex_enc", "address_enc", "Medu", "Fedu", "traveltime", "studytime", "failures", "famsup_enc", "paid_enc", "internet_enc", "romantic_enc", "higher_enc", "freetime", "goout", "Dalc", "Walc", "health", "absences", "G1", "G2"],
-        "domain": "Education / Academic Performance",
-        "accuracy": 0.8228,
-        "algorithm": "Decision Tree (max_depth=6, balanced class weights)",
-        "dataset_key": "student_performance",
     },
 }
 
@@ -480,12 +499,11 @@ async def load_benchmark_model(
     Import a pre-trained benchmark model into a project.
 
     Available model keys:
-    - ``model_1_income_logreg``      – Adult Income, Logistic Regression
-    - ``model_2_credit_random_forest`` – Credit Default, Random Forest
-    - ``model_3_recidivism_gbm``     – Recidivism Risk, Gradient Boosting
-    - ``model_4_heart_svm``          – Heart Disease, SVM
-    - ``model_5_attrition_mlp``      – Employee Attrition, MLP
-    - ``model_6_student_decision_tree`` – Student Pass/Fail, Decision Tree
+    - ``model_1_income_hgbm``        – Adult Income, HistGradientBoosting (AUC 0.922)
+    - ``model_2_credit_rf``          – Credit Card Default, Random Forest (AUC 0.776)
+    - ``model_3_recidivism_logreg``  – Recidivism Risk, Logistic Regression ElasticNet (AUC 0.737)
+    - ``model_4_heart_gbm``          – Heart Disease, Gradient Boosting (AUC 0.897)
+    - ``model_5_attrition_mlp``      – Employee Attrition, MLP Neural Network (AUC 0.764)
     """
     if model_key not in BENCHMARK_MODELS:
         raise HTTPException(

@@ -1,26 +1,29 @@
 {
-  "model_1_income_logreg": {
-    "file": "trained_models/model_1_income_logreg.pkl",
-    "dataset": "datasets/adult_income.csv",
+  "model_1_income_hgbm": {
+    "file": "trained_models/model_1_income_hgbm.joblib",
+    "dataset": "datasets/processed/adult_income_processed.csv",
     "feature_columns": [
       "age",
-      "education_num",
-      "hours_per_week",
-      "capital_gain",
-      "capital_loss",
+      "education.num",
+      "hours.per.week",
+      "capital.gain",
+      "capital.loss",
+      "fnlwgt",
       "sex_encoded",
-      "fnlwgt"
+      "workclass_enc",
+      "marital_enc",
+      "occupation_enc"
     ],
     "target_column": "income_binary",
     "sensitive_feature": "sex",
     "positive_label": 1,
-    "description": "Predicts whether an adult earns >$50K/year. Classic fairness benchmark.",
+    "description": "Predicts whether an adult earns >$50K/year. Classic fairness benchmark for gender bias.",
     "domain": "Finance / Social Policy",
-    "model_type": "Logistic Regression (Pipeline with StandardScaler)"
+    "model_type": "HistGradientBoostingClassifier (400 iter, lr=0.05, depth=6, balanced)"
   },
-  "model_2_credit_random_forest": {
-    "file": "trained_models/model_2_credit_random_forest.joblib",
-    "dataset": "datasets/credit_default.csv",
+  "model_2_credit_rf": {
+    "file": "trained_models/model_2_credit_rf.joblib",
+    "dataset": "datasets/processed/credit_default_processed.csv",
     "feature_columns": [
       "LIMIT_BAL",
       "SEX",
@@ -30,38 +33,50 @@
       "PAY_0",
       "PAY_2",
       "PAY_3",
+      "PAY_4",
+      "PAY_5",
+      "PAY_6",
       "BILL_AMT1",
-      "PAY_AMT1"
+      "BILL_AMT2",
+      "BILL_AMT3",
+      "BILL_AMT4",
+      "BILL_AMT5",
+      "BILL_AMT6",
+      "PAY_AMT1",
+      "PAY_AMT2",
+      "PAY_AMT3",
+      "PAY_AMT4",
+      "PAY_AMT5",
+      "PAY_AMT6"
     ],
     "target_column": "default",
     "sensitive_feature": "SEX_label",
     "positive_label": 1,
-    "description": "Predicts credit card payment default. Tests gender-based fairness in banking.",
+    "description": "Predicts credit card payment default using full 6-month payment history. Tests gender-based fairness.",
     "domain": "Banking / Credit Risk",
-    "model_type": "Random Forest (150 trees, max_depth=8)"
+    "model_type": "RandomForest (300 trees, depth=10, sqrt features, balanced)"
   },
-  "model_3_recidivism_gbm": {
-    "file": "trained_models/model_3_recidivism_gbm.pkl",
-    "dataset": "datasets/compas_recidivism.csv",
+  "model_3_recidivism_logreg": {
+    "file": "trained_models/model_3_recidivism_logreg.pkl",
+    "dataset": "datasets/processed/compas_recidivism_processed.csv",
     "feature_columns": [
-      "age",
-      "sex_enc",
-      "juv_fel_count",
-      "juv_misd_count",
-      "juv_other_count",
-      "priors_count",
-      "charge_enc"
+      "Number_of_Priors",
+      "Age_Above_FourtyFive",
+      "Age_Below_TwentyFive",
+      "Female",
+      "Misdemeanor",
+      "score_factor"
     ],
-    "target_column": "two_year_recid",
+    "target_column": "Two_yr_Recidivism",
     "sensitive_feature": "race",
     "positive_label": 1,
-    "description": "Predicts 2-year recidivism risk. Replicates the COMPAS algorithm studied for racial bias.",
+    "description": "Predicts 2-year recidivism using ProPublica COMPAS data. Tests racial bias in criminal justice.",
     "domain": "Criminal Justice",
-    "model_type": "Gradient Boosting (200 estimators, lr=0.05)"
+    "model_type": "Logistic Regression (ElasticNet, C=0.5, balanced)"
   },
-  "model_4_heart_svm": {
-    "file": "trained_models/model_4_heart_svm.pkl",
-    "dataset": "datasets/heart_disease.csv",
+  "model_4_heart_gbm": {
+    "file": "trained_models/model_4_heart_gbm.pkl",
+    "dataset": "datasets/processed/heart_disease_processed.csv",
     "feature_columns": [
       "age",
       "sex",
@@ -82,17 +97,18 @@
     "positive_label": 1,
     "description": "Detects heart disease presence. Tests sex and age disparities in medical diagnosis.",
     "domain": "Healthcare / Medical Diagnosis",
-    "model_type": "SVM (RBF kernel, probability=True, Pipeline with StandardScaler)"
+    "model_type": "GradientBoosting (300 trees, depth=3, lr=0.05, subsample=0.8)"
   },
   "model_5_attrition_mlp": {
     "file": "trained_models/model_5_attrition_mlp.pkl",
-    "dataset": "datasets/ibm_hr_attrition.csv",
+    "dataset": "datasets/processed/ibm_hr_attrition_processed.csv",
     "feature_columns": [
       "Age",
       "DailyRate",
       "DistanceFromHome",
       "Education",
       "EnvironmentSatisfaction",
+      "Gender_enc",
       "JobInvolvement",
       "JobLevel",
       "JobSatisfaction",
@@ -111,41 +127,8 @@
     "target_column": "Attrition_binary",
     "sensitive_feature": "Gender",
     "positive_label": 1,
-    "description": "Predicts employee attrition. Tests gender and age fairness in HR decisions.",
+    "description": "Predicts employee attrition using IBM HR data. Tests gender fairness in HR decisions.",
     "domain": "HR / People Analytics",
-    "model_type": "MLP Neural Network (128\u219264\u219232 ReLU, Pipeline with StandardScaler)"
-  },
-  "model_6_student_decision_tree": {
-    "file": "trained_models/model_6_student_decision_tree.pkl",
-    "dataset": "datasets/student_performance.csv",
-    "feature_columns": [
-      "age",
-      "sex_enc",
-      "address_enc",
-      "Medu",
-      "Fedu",
-      "traveltime",
-      "studytime",
-      "failures",
-      "famsup_enc",
-      "paid_enc",
-      "internet_enc",
-      "romantic_enc",
-      "higher_enc",
-      "freetime",
-      "goout",
-      "Dalc",
-      "Walc",
-      "health",
-      "absences",
-      "G1",
-      "G2"
-    ],
-    "target_column": "pass_fail",
-    "sensitive_feature": "sex",
-    "positive_label": 1,
-    "description": "Predicts student pass/fail. Tests gender and urban/rural fairness in education outcomes.",
-    "domain": "Education / Academic Performance",
-    "model_type": "Decision Tree (max_depth=6, balanced class weight)"
+    "model_type": "MLP (256\u2192128\u219264\u219232 ReLU, L2 alpha=0.01, adaptive LR, early stopping)"
   }
 }

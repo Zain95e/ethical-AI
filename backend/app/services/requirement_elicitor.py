@@ -390,10 +390,23 @@ class RequirementElicitor:
             logger.warning("Could not load model for elicitation: %s", exc)
             raise ValueError(f"Could not load model for elicitation: {exc}") from exc
 
-        # Prepare features (drop target if known)
+        # Prepare features — prefer the model's own feature list when available,
+        # so extra columns in the CSV (e.g. raw sensitive-attribute strings that were
+        # encoded before training) don't cause a feature-count mismatch.
         target = dataset_obj.target_column
-        feature_cols = [c for c in df.columns if c != target] if target else list(df.columns)
         sensitive_attrs = dataset_obj.sensitive_attributes or []
+
+        model_feature_names = getattr(model, "feature_names", None)
+        if isinstance(model_feature_names, list) and model_feature_names:
+            missing_in_df = set(model_feature_names) - set(df.columns)
+            if missing_in_df:
+                raise ElicitationFeatureMismatchError(
+                    f"Dataset is missing columns the model was trained on: {sorted(missing_in_df)}. "
+                    "Please use the same dataset schema used during training."
+                )
+            feature_cols = model_feature_names
+        else:
+            feature_cols = [c for c in df.columns if c != target] if target else list(df.columns)
 
         X = df[feature_cols].copy()
         # Label-encode categorical columns so feature count matches what the model was trained on

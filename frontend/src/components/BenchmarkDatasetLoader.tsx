@@ -18,22 +18,28 @@ import {
     Tab,
     LinearProgress,
     Divider,
+    Tooltip,
 } from '@mui/material';
 import {
     Gavel as GavelIcon,
     Work as WorkIcon,
     AccountBalance as BankIcon,
     LocalHospital as HospitalIcon,
-    School as EducationIcon,
     Psychology as BrainIcon,
     CloudDownload as ImportIcon,
     Dataset as DatasetIcon,
     ModelTraining as ModelIcon,
+    Warning as WarningIcon,
+    CheckCircle as CheckIcon,
+    ErrorOutline as CriticalIcon,
+    Info as InfoIcon,
 } from '@mui/icons-material';
 
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
+
+type BiasLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 interface BenchmarkEntry {
     key: string;
@@ -41,11 +47,17 @@ interface BenchmarkEntry {
     description: string;
     domain: string;
     target_column: string;
+    target_values: { '0': string; '1': string };
     sensitive_attributes: string[];
+    sensitive_values: Record<string, string[]>;
     key_features: string[];
     reference: string;
+    rows: number;
+    bias_level: BiasLevel;
+    bias_description: string;
     // models only
     accuracy?: number;
+    auc_roc?: number;
     algorithm?: string;
 }
 
@@ -54,14 +66,12 @@ interface BenchmarkLoaderProps {
     onClose: () => void;
     projectId: string;
     onSuccess: (name: string, type: 'dataset' | 'model') => void;
-    /** Names of models already in this project (for duplicate UI indicator) */
     existingModelNames?: string[];
-    /** Names of datasets already in this project (for duplicate UI indicator) */
     existingDatasetNames?: string[];
 }
 
 // ─────────────────────────────────────────────
-// Catalogue
+// Catalogue — 5 Datasets
 // ─────────────────────────────────────────────
 
 const BENCHMARK_DATASETS: BenchmarkEntry[] = [
@@ -69,142 +79,193 @@ const BENCHMARK_DATASETS: BenchmarkEntry[] = [
         key: 'adult_income',
         name: 'Adult Income',
         description:
-            'Census data predicting whether an adult earns >$50K/year. Classic fairness benchmark for Finance / Social Policy.',
+            'UCI Census Income dataset — 32 561 US adults from the 1994 census. Predicts whether a person earns above or below $50K/year based on demographic and employment data.',
         domain: 'finance',
         target_column: 'income_binary',
+        target_values: { '0': 'Earns ≤$50K / year', '1': 'Earns >$50K / year' },
         sensitive_attributes: ['sex'],
-        key_features: ['age', 'education_num', 'hours_per_week', 'capital_gain', 'capital_loss', 'sex_encoded', 'fnlwgt'],
-        reference: 'UCI Adult / Census Income Dataset (30 162 rows)',
+        sensitive_values: { sex: ['Male', 'Female'] },
+        key_features: ['age', 'education.num', 'hours.per.week', 'capital.gain', 'capital.loss', 'fnlwgt', 'sex_encoded', 'workclass_enc', 'marital_enc', 'occupation_enc'],
+        reference: 'UCI Adult / Census Income Dataset (32 561 rows)',
+        rows: 32561,
+        bias_level: 'HIGH',
+        bias_description:
+            'Known gender pay gap — women are predicted to earn >$50K at roughly half the rate of men, reflecting 1994 census wage inequality. Demographic parity and equal opportunity metrics will likely FAIL.',
     },
     {
         key: 'credit_default',
         name: 'Credit Card Default',
         description:
-            'Taiwan credit-card dataset predicting payment default. Tests gender-based fairness in Banking / Credit Risk.',
+            'Taiwan credit-card payment data — 30 000 clients with full 6-month payment history. Predicts whether a client will default on their payment next month.',
         domain: 'finance',
         target_column: 'default',
+        target_values: { '0': 'Paid on time (no default)', '1': 'Defaulted next month' },
         sensitive_attributes: ['SEX_label'],
-        key_features: ['LIMIT_BAL', 'SEX', 'EDUCATION', 'MARRIAGE', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'BILL_AMT1', 'PAY_AMT1'],
+        sensitive_values: { SEX_label: ['Male', 'Female'] },
+        key_features: ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'BILL_AMT2', 'PAY_AMT1', 'PAY_AMT2'],
         reference: 'UCI Default of Credit Card Clients Dataset (30 000 rows)',
+        rows: 30000,
+        bias_level: 'LOW',
+        bias_description:
+            'Model relies almost entirely on payment history, not demographics. SHAP analysis confirms gender (SEX) has very low feature importance. Fairness metrics typically PASS — good example of a relatively fair model.',
     },
     {
         key: 'compas_recidivism',
-        name: 'Recidivism Risk',
+        name: 'COMPAS Recidivism',
         description:
-            'COMPAS recidivism dataset predicting 2-year reoffending risk. Widely studied for racial bias in Criminal Justice.',
+            'ProPublica COMPAS dataset — 6 172 Florida defendants from 2013–2014. Predicts whether a defendant will reoffend within 2 years.',
         domain: 'criminal_justice',
-        target_column: 'two_year_recid',
+        target_column: 'Two_yr_Recidivism',
+        target_values: { '0': 'Did not reoffend within 2 years', '1': 'Reoffended within 2 years' },
         sensitive_attributes: ['race'],
-        key_features: ['age', 'sex_enc', 'juv_fel_count', 'juv_misd_count', 'juv_other_count', 'priors_count', 'charge_enc'],
-        reference: 'ProPublica COMPAS Analysis (2016) — 7 214 rows',
+        sensitive_values: { race: ['African-American', 'Caucasian', 'Hispanic', 'Asian', 'Native American', 'Other'] },
+        key_features: ['Number_of_Priors', 'Age_Above_FourtyFive', 'Age_Below_TwentyFive', 'Female', 'Misdemeanor', 'score_factor'],
+        reference: 'ProPublica "Machine Bias" Investigation (2016) — 6 172 rows',
+        rows: 6172,
+        bias_level: 'CRITICAL',
+        bias_description:
+            'DOCUMENTED RACIAL BIAS — African-Americans represent 51.4% of this dataset and are flagged for recidivism at significantly higher rates than Caucasians. This is the dataset behind ProPublica\'s landmark 2016 investigation "Machine Bias". Fairness metrics on race WILL FAIL — this is intentional, demonstrating real-world algorithmic discrimination.',
     },
     {
         key: 'heart_disease',
         name: 'Heart Disease',
         description:
-            'Cleveland Heart Disease dataset detecting cardiac disease. Tests sex and age disparities in Healthcare / Medical Diagnosis.',
+            'Cleveland Heart Disease dataset — 299 patients from the UCI repository. Predicts presence of cardiac disease from 13 clinical measurements.',
         domain: 'healthcare',
         target_column: 'target',
+        target_values: { '0': 'No cardiac disease detected', '1': 'Cardiac disease present' },
         sensitive_attributes: ['sex_label'],
-        key_features: ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalch', 'exang', 'oldpeak', 'slope', 'ca', 'thal'],
-        reference: 'UCI Heart Disease Dataset (299 rows)',
+        sensitive_values: { sex_label: ['Male', 'Female'] },
+        key_features: ['age', 'sex', 'cp', 'trestbps', 'chol', 'thalch', 'exang', 'oldpeak', 'slope', 'ca', 'thal'],
+        reference: 'UCI Heart Disease Dataset — Cleveland (299 rows)',
+        rows: 299,
+        bias_level: 'MEDIUM',
+        bias_description:
+            'Heart disease has real clinical sex differences — symptoms and presentation differ between men and women. Expect mixed results: some fairness metrics may pass, others may flag sex-based detection disparities. Small dataset (299 rows) means results have higher variance.',
     },
     {
         key: 'ibm_hr_attrition',
-        name: 'Employee Attrition',
+        name: 'IBM HR Attrition',
         description:
-            'IBM HR Analytics dataset predicting employee attrition. Tests gender and age fairness in HR / People Analytics.',
+            'IBM HR Analytics synthetic dataset — 1 470 employees. Predicts whether an employee will leave the company, using job satisfaction, salary, and role information.',
         domain: 'employment',
         target_column: 'Attrition_binary',
+        target_values: { '0': 'Employee stayed at company', '1': 'Employee left (attrition)' },
         sensitive_attributes: ['Gender'],
-        key_features: ['Age', 'DailyRate', 'DistanceFromHome', 'Education', 'EnvironmentSatisfaction', 'JobInvolvement', 'JobLevel', 'JobSatisfaction', 'MonthlyIncome'],
+        sensitive_values: { Gender: ['Male', 'Female'] },
+        key_features: ['Age', 'MonthlyIncome', 'OverTime_enc', 'JobSatisfaction', 'YearsAtCompany', 'WorkLifeBalance', 'JobLevel', 'TotalWorkingYears', 'EnvironmentSatisfaction'],
         reference: 'IBM HR Analytics Employee Attrition Dataset (1 470 rows)',
-    },
-    {
-        key: 'student_performance',
-        name: 'Student Pass/Fail',
-        description:
-            'Portuguese student performance dataset predicting pass/fail outcomes. Tests gender and urban/rural fairness in Education.',
-        domain: 'education',
-        target_column: 'pass_fail',
-        sensitive_attributes: ['sex'],
-        key_features: ['age', 'sex_enc', 'address_enc', 'Medu', 'Fedu', 'traveltime', 'studytime', 'failures', 'absences', 'G1', 'G2'],
-        reference: 'UCI Student Performance Dataset (395 rows)',
+        rows: 1470,
+        bias_level: 'LOW',
+        bias_description:
+            'Synthetic dataset created by IBM — relatively balanced by gender. Only 16% of employees leave (class imbalance), handled with balanced class weights during training. Fairness metrics typically PASS. Use this as a baseline to contrast against COMPAS and Adult Income.',
     },
 ];
 
+// ─────────────────────────────────────────────
+// Catalogue — 5 Models
+// ─────────────────────────────────────────────
+
 const BENCHMARK_MODELS: BenchmarkEntry[] = [
     {
-        key: 'model_1_income_logreg',
+        key: 'model_1_income_hgbm',
         name: 'Adult Income Predictor',
-        description: 'Predicts whether an adult earns >$50K/year (income_binary). Trained on 30 162 census records.',
+        description:
+            'Predicts whether a US adult earns >$50K/year. Trained on 32 561 census records using the full UCI Adult dataset.',
         domain: 'finance',
         target_column: 'income_binary',
+        target_values: { '0': 'Earns ≤$50K / year', '1': 'Earns >$50K / year' },
         sensitive_attributes: ['sex'],
-        key_features: ['age', 'education_num', 'hours_per_week', 'capital_gain', 'capital_loss', 'sex_encoded', 'fnlwgt'],
-        reference: 'UCI Adult / Census Income Dataset',
-        accuracy: 0.8228,
-        algorithm: 'Logistic Regression (StandardScaler pipeline)',
+        sensitive_values: { sex: ['Male', 'Female'] },
+        key_features: ['age', 'education.num', 'hours.per.week', 'capital.gain', 'capital.loss', 'sex_encoded', 'workclass_enc', 'marital_enc', 'occupation_enc'],
+        reference: 'UCI Adult / Census Income Dataset (32 561 rows)',
+        rows: 32561,
+        bias_level: 'HIGH',
+        bias_description:
+            'Gender pay gap encoded in training data — women predicted >$50K at roughly half the rate of men. Demographic parity and equal opportunity metrics will likely FAIL.',
+        accuracy: 0.8268,
+        auc_roc: 0.9224,
+        algorithm: 'HistGradientBoosting (400 iter, lr=0.05, depth=6)',
     },
     {
-        key: 'model_2_credit_random_forest',
+        key: 'model_2_credit_rf',
         name: 'Credit Card Default Classifier',
-        description: 'Predicts credit card payment default (default). Trained on 30 000 Taiwan credit records.',
+        description:
+            'Predicts credit card payment default using full 6-month payment history. Trained on 30 000 Taiwan credit records.',
         domain: 'finance',
         target_column: 'default',
+        target_values: { '0': 'Paid on time', '1': 'Defaulted' },
         sensitive_attributes: ['SEX_label'],
-        key_features: ['LIMIT_BAL', 'SEX', 'EDUCATION', 'MARRIAGE', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'BILL_AMT1', 'PAY_AMT1'],
-        reference: 'UCI Default of Credit Card Clients Dataset',
-        accuracy: 0.8185,
-        algorithm: 'Random Forest (150 trees, max_depth=8)',
+        sensitive_values: { SEX_label: ['Male', 'Female'] },
+        key_features: ['LIMIT_BAL', 'AGE', 'PAY_0', 'PAY_2', 'PAY_3', 'PAY_4', 'PAY_5', 'PAY_6', 'BILL_AMT1', 'PAY_AMT1'],
+        reference: 'UCI Default of Credit Card Clients Dataset (30 000 rows)',
+        rows: 30000,
+        bias_level: 'LOW',
+        bias_description:
+            'Payment history dominates (confirmed by SHAP). Gender has very low feature importance. Fairness metrics typically PASS — good fair model baseline.',
+        accuracy: 0.7732,
+        auc_roc: 0.7764,
+        algorithm: 'Random Forest (300 trees, depth=10, balanced)',
     },
     {
-        key: 'model_3_recidivism_gbm',
+        key: 'model_3_recidivism_logreg',
         name: 'Recidivism Risk Assessor',
-        description: 'Predicts 2-year recidivism risk (two_year_recid). Trained on 7 214 COMPAS records.',
+        description:
+            'Predicts 2-year reoffending risk. Logistic Regression chosen deliberately for interpretability in high-stakes criminal justice. Trained on ProPublica COMPAS data.',
         domain: 'criminal_justice',
-        target_column: 'two_year_recid',
+        target_column: 'Two_yr_Recidivism',
+        target_values: { '0': 'Did not reoffend', '1': 'Reoffended within 2 years' },
         sensitive_attributes: ['race'],
-        key_features: ['age', 'sex_enc', 'juv_fel_count', 'juv_misd_count', 'juv_other_count', 'priors_count', 'charge_enc'],
-        reference: 'ProPublica COMPAS Analysis (2016)',
-        accuracy: 0.6881,
-        algorithm: 'Gradient Boosting (200 estimators, lr=0.05)',
+        sensitive_values: { race: ['African-American', 'Caucasian', 'Hispanic', 'Asian', 'Native American', 'Other'] },
+        key_features: ['Number_of_Priors', 'Age_Above_FourtyFive', 'Age_Below_TwentyFive', 'Female', 'Misdemeanor', 'score_factor'],
+        reference: 'ProPublica COMPAS Analysis (2016) — 6 172 rows',
+        rows: 6172,
+        bias_level: 'CRITICAL',
+        bias_description:
+            'DOCUMENTED RACIAL BIAS. African-Americans flagged at significantly higher rates. This replicates the bias found in ProPublica\'s 2016 "Machine Bias" investigation. Fairness metrics WILL FAIL on race.',
+        accuracy: 0.6761,
+        auc_roc: 0.7368,
+        algorithm: 'Logistic Regression (ElasticNet, C=0.5, balanced)',
     },
     {
-        key: 'model_4_heart_svm',
+        key: 'model_4_heart_gbm',
         name: 'Heart Disease Detector',
-        description: 'Detects cardiac disease presence (target). Trained on 299 Cleveland Heart Disease records.',
+        description:
+            'Detects cardiac disease from 13 clinical measurements. Shallow trees prevent overfitting on this small 299-row dataset.',
         domain: 'healthcare',
         target_column: 'target',
+        target_values: { '0': 'No cardiac disease', '1': 'Cardiac disease present' },
         sensitive_attributes: ['sex_label'],
-        key_features: ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalch', 'exang', 'oldpeak', 'slope', 'ca', 'thal'],
-        reference: 'UCI Heart Disease Dataset',
-        accuracy: 0.8667,
-        algorithm: 'SVM (RBF kernel, probability=True, StandardScaler pipeline)',
+        sensitive_values: { sex_label: ['Male', 'Female'] },
+        key_features: ['age', 'sex', 'cp', 'trestbps', 'chol', 'thalch', 'exang', 'oldpeak', 'slope', 'ca', 'thal'],
+        reference: 'UCI Heart Disease Dataset — Cleveland (299 rows)',
+        rows: 299,
+        bias_level: 'MEDIUM',
+        bias_description:
+            'Clinical sex differences in heart disease symptoms cause mixed fairness results. Some metrics may pass, others may flag sex-based detection disparities. Small dataset means higher variance.',
+        accuracy: 0.8167,
+        auc_roc: 0.8973,
+        algorithm: 'Gradient Boosting (300 trees, depth=3, lr=0.05, subsample=0.8)',
     },
     {
         key: 'model_5_attrition_mlp',
         name: 'Employee Attrition Predictor',
-        description: 'Predicts employee attrition (Attrition_binary). Trained on 1 470 IBM HR records.',
+        description:
+            'Predicts employee attrition using job satisfaction, salary, role, and tenure data. Deep MLP with L2 regularisation handles the 20 correlated HR features.',
         domain: 'employment',
         target_column: 'Attrition_binary',
+        target_values: { '0': 'Employee stayed', '1': 'Employee left (attrition)' },
         sensitive_attributes: ['Gender'],
-        key_features: ['Age', 'DailyRate', 'DistanceFromHome', 'Education', 'EnvironmentSatisfaction', 'JobInvolvement', 'JobLevel', 'JobSatisfaction', 'MonthlyIncome'],
-        reference: 'IBM HR Analytics Employee Attrition Dataset',
+        sensitive_values: { Gender: ['Male', 'Female'] },
+        key_features: ['Age', 'MonthlyIncome', 'OverTime_enc', 'JobSatisfaction', 'YearsAtCompany', 'WorkLifeBalance', 'JobLevel', 'TotalWorkingYears', 'EnvironmentSatisfaction'],
+        reference: 'IBM HR Analytics Employee Attrition Dataset (1 470 rows)',
+        rows: 1470,
+        bias_level: 'LOW',
+        bias_description:
+            'Synthetic IBM dataset, relatively balanced by gender. Fairness metrics typically PASS. Good contrast to COMPAS — shows what a fair model looks like.',
         accuracy: 0.8673,
-        algorithm: 'MLP Neural Network (128→64→32 ReLU, StandardScaler pipeline)',
-    },
-    {
-        key: 'model_6_student_decision_tree',
-        name: 'Student Pass/Fail Predictor',
-        description: 'Predicts student pass/fail outcome (pass_fail). Trained on 395 Portuguese student records.',
-        domain: 'education',
-        target_column: 'pass_fail',
-        sensitive_attributes: ['sex'],
-        key_features: ['age', 'sex_enc', 'address_enc', 'Medu', 'Fedu', 'traveltime', 'studytime', 'failures', 'absences', 'G1', 'G2'],
-        reference: 'UCI Student Performance Dataset',
-        accuracy: 0.8228,
-        algorithm: 'Decision Tree (max_depth=6, balanced class weights)',
+        auc_roc: 0.7635,
+        algorithm: 'MLP Neural Network (256→128→64→32 ReLU, L2 alpha=0.01)',
     },
 ];
 
@@ -217,7 +278,6 @@ const DOMAIN_ICONS: Record<string, React.ReactElement> = {
     criminal_justice: <GavelIcon sx={{ fontSize: 36 }} />,
     healthcare: <HospitalIcon sx={{ fontSize: 36 }} />,
     employment: <WorkIcon sx={{ fontSize: 36 }} />,
-    education: <EducationIcon sx={{ fontSize: 36 }} />,
 };
 
 const DOMAIN_COLORS: Record<string, string> = {
@@ -225,7 +285,6 @@ const DOMAIN_COLORS: Record<string, string> = {
     criminal_justice: '#f44336',
     healthcare: '#4caf50',
     employment: '#ff9800',
-    education: '#9c27b0',
 };
 
 const DOMAIN_LABELS: Record<string, string> = {
@@ -233,17 +292,30 @@ const DOMAIN_LABELS: Record<string, string> = {
     criminal_justice: 'Criminal Justice',
     healthcare: 'Healthcare',
     employment: 'Employment',
-    education: 'Education',
 };
 
-function AccuracyBar({ value }: { value: number }) {
+const BIAS_CONFIG: Record<BiasLevel, { color: string; bgcolor: string; icon: React.ReactElement; label: string }> = {
+    CRITICAL: { color: '#c62828', bgcolor: '#ffebee', icon: <CriticalIcon sx={{ fontSize: 14 }} />, label: 'CRITICAL BIAS' },
+    HIGH:     { color: '#e65100', bgcolor: '#fff3e0', icon: <WarningIcon sx={{ fontSize: 14 }} />, label: 'HIGH BIAS' },
+    MEDIUM:   { color: '#f57f17', bgcolor: '#fffde7', icon: <InfoIcon sx={{ fontSize: 14 }} />,    label: 'MEDIUM BIAS' },
+    LOW:      { color: '#2e7d32', bgcolor: '#e8f5e9', icon: <CheckIcon sx={{ fontSize: 14 }} />,   label: 'LOW BIAS' },
+};
+
+function AccuracyBar({ value, auc }: { value: number; auc?: number }) {
     const pct = Math.round(value * 100);
     const color = pct >= 85 ? '#4caf50' : pct >= 75 ? '#ff9800' : '#f44336';
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" mb={0.5}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
                 <Typography variant="caption" color="text.secondary">Accuracy</Typography>
-                <Typography variant="caption" fontWeight={700} sx={{ color }}>{pct}%</Typography>
+                <Box display="flex" gap={1.5} alignItems="center">
+                    {auc !== undefined && (
+                        <Typography variant="caption" color="text.secondary">
+                            AUC-ROC: <strong>{auc.toFixed(3)}</strong>
+                        </Typography>
+                    )}
+                    <Typography variant="caption" fontWeight={700} sx={{ color }}>{pct}%</Typography>
+                </Box>
             </Box>
             <LinearProgress
                 variant="determinate"
@@ -278,6 +350,7 @@ function BenchmarkCard({
 }) {
     const color = DOMAIN_COLORS[entry.domain] || '#607d8b';
     const icon = DOMAIN_ICONS[entry.domain] || <BrainIcon sx={{ fontSize: 36 }} />;
+    const bias = BIAS_CONFIG[entry.bias_level];
 
     return (
         <Card
@@ -289,8 +362,9 @@ function BenchmarkCard({
                 opacity: alreadyImported ? 0.82 : 1,
             }}
         >
-            <CardContent>
-                {/* Header row */}
+            <CardContent sx={{ pb: 1 }}>
+
+                {/* ── Header row ── */}
                 <Box display="flex" alignItems="flex-start" gap={2}>
                     <Box sx={{ color, mt: 0.5, flexShrink: 0 }}>{icon}</Box>
                     <Box flex={1} minWidth={0}>
@@ -299,19 +373,16 @@ function BenchmarkCard({
                                 {entry.name}
                             </Typography>
                             {alreadyImported && (
-                                <Chip
-                                    label="✓ Already Imported"
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                    sx={{ fontSize: 11, fontWeight: 700 }}
-                                />
+                                <Chip label="✓ Already Imported" size="small" color="success" variant="outlined" sx={{ fontSize: 11, fontWeight: 700 }} />
                             )}
                             <Chip
                                 label={DOMAIN_LABELS[entry.domain] || entry.domain}
                                 size="small"
                                 sx={{ bgcolor: `${color}22`, color, fontWeight: 600, fontSize: 11 }}
                             />
+                            <Typography variant="caption" color="text.disabled">
+                                {entry.rows.toLocaleString()} rows
+                            </Typography>
                         </Box>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                             {entry.description}
@@ -321,66 +392,139 @@ function BenchmarkCard({
 
                 <Divider sx={{ my: 1.5 }} />
 
-                {/* Metadata grid */}
-                <Box display="grid" gridTemplateColumns="1fr 1fr" gap={1.5}>
-                    {/* Target */}
-                    <Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                            Target Column
+                {/* ── Bias Assessment ── */}
+                <Box
+                    sx={{
+                        bgcolor: bias.bgcolor,
+                        border: `1px solid ${bias.color}44`,
+                        borderRadius: 1.5,
+                        px: 1.5,
+                        py: 1,
+                        mb: 1.5,
+                    }}
+                >
+                    <Box display="flex" alignItems="center" gap={0.75} mb={0.5}>
+                        <Box sx={{ color: bias.color, display: 'flex' }}>{bias.icon}</Box>
+                        <Typography variant="caption" fontWeight={700} sx={{ color: bias.color, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                            Bias Assessment: {bias.label}
                         </Typography>
-                        <Chip label={entry.target_column} size="small" variant="outlined" sx={{ mt: 0.5, fontFamily: 'monospace', fontSize: 11 }} />
                     </Box>
-                    {/* Sensitive */}
-                    <Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                            Sensitive Attribute{entry.sensitive_attributes.length > 1 ? 's' : ''}
+                    <Typography variant="caption" sx={{ color: bias.color, lineHeight: 1.5 }}>
+                        {entry.bias_description}
+                    </Typography>
+                </Box>
+
+                {/* ── Target & Sensitive columns ── */}
+                <Box display="grid" gridTemplateColumns="1fr 1fr" gap={1.5} mb={1.5}>
+
+                    {/* Target column */}
+                    <Box
+                        sx={{
+                            bgcolor: 'action.hover',
+                            borderRadius: 1.5,
+                            p: 1.25,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                        }}
+                    >
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.75}>
+                            🎯 TARGET COLUMN
                         </Typography>
-                        <Box mt={0.5} display="flex" flexWrap="wrap" gap={0.5}>
-                            {entry.sensitive_attributes.map((attr) => (
-                                <Chip key={attr} label={attr} size="small" color="warning" variant="outlined" sx={{ fontSize: 11 }} />
-                            ))}
+                        <Chip
+                            label={entry.target_column}
+                            size="small"
+                            variant="outlined"
+                            sx={{ fontFamily: 'monospace', fontSize: 11, mb: 0.75, fontWeight: 700 }}
+                        />
+                        <Box display="flex" flexDirection="column" gap={0.4} mt={0.25}>
+                            <Typography variant="caption" color="text.secondary">
+                                <Box component="span" sx={{ fontFamily: 'monospace', bgcolor: 'action.selected', px: 0.5, borderRadius: 0.5, mr: 0.5 }}>0</Box>
+                                {entry.target_values['0']}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                <Box component="span" sx={{ fontFamily: 'monospace', bgcolor: 'action.selected', px: 0.5, borderRadius: 0.5, mr: 0.5 }}>1</Box>
+                                {entry.target_values['1']}
+                            </Typography>
                         </Box>
+                    </Box>
+
+                    {/* Sensitive attributes */}
+                    <Box
+                        sx={{
+                            bgcolor: 'action.hover',
+                            borderRadius: 1.5,
+                            p: 1.25,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                        }}
+                    >
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.75}>
+                            ⚖️ SENSITIVE FEATURE{entry.sensitive_attributes.length > 1 ? 'S' : ''}
+                        </Typography>
+                        {entry.sensitive_attributes.map((attr) => (
+                            <Box key={attr} mb={0.75}>
+                                <Chip
+                                    label={attr}
+                                    size="small"
+                                    color="warning"
+                                    variant="outlined"
+                                    sx={{ fontSize: 11, fontWeight: 700, mb: 0.5, fontFamily: 'monospace' }}
+                                />
+                                <Box display="flex" flexWrap="wrap" gap={0.4}>
+                                    {(entry.sensitive_values[attr] || []).map((val) => (
+                                        <Tooltip key={val} title={`Possible value for ${attr}`}>
+                                            <Chip
+                                                label={val}
+                                                size="small"
+                                                sx={{ fontSize: 10, height: 18, '& .MuiChip-label': { px: 0.75 } }}
+                                            />
+                                        </Tooltip>
+                                    ))}
+                                </Box>
+                            </Box>
+                        ))}
                     </Box>
                 </Box>
 
-                {/* Algorithm (models only) */}
+                {/* ── Algorithm (models only) ── */}
                 {entry.algorithm && (
-                    <Box mt={1.5}>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                            Algorithm
+                    <Box mb={1.5} sx={{ bgcolor: 'action.hover', borderRadius: 1.5, p: 1.25, border: '1px solid', borderColor: 'divider' }}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+                            🤖 ALGORITHM
                         </Typography>
-                        <Typography variant="body2" fontWeight={500} sx={{ mt: 0.25 }}>
+                        <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace', fontSize: 12 }}>
                             {entry.algorithm}
                         </Typography>
                     </Box>
                 )}
 
-                {/* Accuracy bar (models only) */}
+                {/* ── Accuracy bar (models only) ── */}
                 {entry.accuracy !== undefined && (
-                    <Box mt={1.5}>
-                        <AccuracyBar value={entry.accuracy} />
+                    <Box mb={1.5}>
+                        <AccuracyBar value={entry.accuracy} auc={entry.auc_roc} />
                     </Box>
                 )}
 
-                {/* Key features */}
-                <Box mt={1.5}>
-                    <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                        Key Features
+                {/* ── Key features ── */}
+                <Box>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
+                        KEY FEATURES
                     </Typography>
                     <Box display="flex" flexWrap="wrap" gap={0.5}>
-                        {entry.key_features.slice(0, 6).map((f) => (
+                        {entry.key_features.slice(0, 8).map((f) => (
                             <Chip key={f} label={f} size="small" sx={{ fontFamily: 'monospace', fontSize: 10 }} />
                         ))}
-                        {entry.key_features.length > 6 && (
-                            <Chip label={`+${entry.key_features.length - 6} more`} size="small" variant="outlined" sx={{ fontSize: 10 }} />
+                        {entry.key_features.length > 8 && (
+                            <Chip label={`+${entry.key_features.length - 8} more`} size="small" variant="outlined" sx={{ fontSize: 10 }} />
                         )}
                     </Box>
                 </Box>
 
-                {/* Reference */}
+                {/* ── Reference ── */}
                 <Typography variant="caption" color="text.disabled" display="block" mt={1}>
                     📚 {entry.reference}
                 </Typography>
+
             </CardContent>
 
             <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
@@ -439,7 +583,7 @@ export default function BenchmarkDatasetLoader({
             if (!res.ok) {
                 const body = await res.json();
                 if (res.status === 409) {
-                    setError(`This dataset is already imported into this project.`);
+                    setError('This dataset is already imported into this project.');
                 } else {
                     throw new Error(body.detail || 'Failed to import dataset');
                 }
@@ -467,7 +611,7 @@ export default function BenchmarkDatasetLoader({
             if (!res.ok) {
                 const body = await res.json();
                 if (res.status === 409) {
-                    setError(`This model is already imported into this project.`);
+                    setError('This model is already imported into this project.');
                 } else {
                     throw new Error(body.detail || 'Failed to import model');
                 }
@@ -493,26 +637,30 @@ export default function BenchmarkDatasetLoader({
                     <Typography variant="h6" fontWeight={700}>Import Benchmark</Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary" mt={0.5}>
-                    6 locally trained models and their paired datasets — ready for fairness validation.
+                    5 real-world models and paired datasets — each card shows target column, sensitive features, and bias assessment.
                 </Typography>
+
+                {/* Legend */}
+                <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+                    {(Object.entries(BIAS_CONFIG) as [BiasLevel, typeof BIAS_CONFIG[BiasLevel]][]).map(([level, cfg]) => (
+                        <Box
+                            key={level}
+                            display="flex"
+                            alignItems="center"
+                            gap={0.5}
+                            sx={{ bgcolor: cfg.bgcolor, border: `1px solid ${cfg.color}44`, borderRadius: 1, px: 1, py: 0.25 }}
+                        >
+                            <Box sx={{ color: cfg.color, display: 'flex' }}>{cfg.icon}</Box>
+                            <Typography variant="caption" sx={{ color: cfg.color, fontWeight: 700, fontSize: 10 }}>{cfg.label}</Typography>
+                        </Box>
+                    ))}
+                </Box>
             </DialogTitle>
 
             <Box px={3} pt={1}>
                 <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <Tab
-                        icon={<DatasetIcon fontSize="small" />}
-                        iconPosition="start"
-                        label="Datasets (6)"
-                        id="bm-tab-0"
-                        aria-controls="bm-panel-0"
-                    />
-                    <Tab
-                        icon={<ModelIcon fontSize="small" />}
-                        iconPosition="start"
-                        label="Models (6)"
-                        id="bm-tab-1"
-                        aria-controls="bm-panel-1"
-                    />
+                    <Tab icon={<DatasetIcon fontSize="small" />} iconPosition="start" label="Datasets (5)" id="bm-tab-0" aria-controls="bm-panel-0" />
+                    <Tab icon={<ModelIcon fontSize="small" />} iconPosition="start" label="Models (5)" id="bm-tab-1" aria-controls="bm-panel-1" />
                 </Tabs>
             </Box>
 
@@ -534,7 +682,7 @@ export default function BenchmarkDatasetLoader({
                                     type="dataset"
                                     loading={loadingKey === entry.key}
                                     alreadyImported={existingDatasetNames.some(
-                                        (n) => n.toLowerCase() === entry.name.toLowerCase()
+                                        (n) => n.toLowerCase().includes(entry.name.toLowerCase()) || entry.name.toLowerCase().includes(n.toLowerCase())
                                     )}
                                     onImport={isBusy ? () => {} : handleImportDataset}
                                 />
@@ -565,9 +713,7 @@ export default function BenchmarkDatasetLoader({
             </DialogContent>
 
             <DialogActions>
-                <Button onClick={onClose} disabled={isBusy}>
-                    Cancel
-                </Button>
+                <Button onClick={onClose} disabled={isBusy}>Close</Button>
             </DialogActions>
         </Dialog>
     );
